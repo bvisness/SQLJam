@@ -11,18 +11,19 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-const screenWidth = 800
-const screenHeight = 450
+const screenWidth = 1920
+const screenHeight = 1080
 
 var ballPosition = rl.Vector2{screenWidth / 2, screenHeight / 2}
 
 var movies []string
 
 func main() {
-	rl.InitWindow(800, 450, "raylib [core] example - basic window")
+
+	rl.InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window")
 	defer rl.CloseWindow()
 
-	rl.SetTargetFPS(60)
+	rl.SetTargetFPS(120)
 
 	fmt.Println(gui2.GetStyle(0, 0))
 
