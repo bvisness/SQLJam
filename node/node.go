@@ -22,11 +22,12 @@ type Node struct {
 	OutputPinPos []rl.Vector2
 }
 
-func NewTable(table string) *Node {
+func NewTable(table string, alias string) *Node {
 	return &Node{
 		CanSnap: false,
 		Data: &Table{
 			Table: table,
+			Alias: alias,
 		},
 	}
 }
@@ -55,17 +56,25 @@ func NewCombineRows(combineType CombineType) *Node {
 	return &Node {
 		CanSnap: false,
 		Data: &CombineRows{
-			Type: combineType,
+			CombinationType: combineType,
 		},
 	}
 }
 
-func (n *Node) SQL() string {
+func (n *Node) SQL(hasParent bool) string {
 	// TODO: Optimizations :P
 
 	switch d := n.Data.(type) {
 	case *Table:
-		return fmt.Sprintf("SELECT * FROM %s", d.Table)
+		if hasParent {
+			return d.Table
+		} else {
+			if d.Alias == "" {
+				return fmt.Sprintf("SELECT * FROM (%s)", d.Table)
+			} else {
+				return fmt.Sprintf("SELECT * FROM (%s) AS %s", d.Table, d.Alias)
+			}
+		}
 	case *PickColumns:
 		// TODO: Someday allow custom order of columns
 		var cols []string
@@ -81,7 +90,7 @@ func (n *Node) SQL() string {
 			// TODO: Return some kind of nice compile error
 			return "ERROR"
 		} else if len(n.Inputs) == 1 {
-			return fmt.Sprintf("SELECT %s FROM (%s)", colsJoined, n.Inputs[0].SQL())
+			return fmt.Sprintf("SELECT %s FROM (%s)", colsJoined, n.Inputs[0].SQL(true))
 		} else {
 			panic("Pick Columns node had more than one input")
 		}
@@ -96,7 +105,7 @@ func (n *Node) SQL() string {
 			// TODO: Return some kind of nice compile error
 			return "ERROR"
 		} else if len(n.Inputs) == 1 {
-			return fmt.Sprintf("SELECT * FROM (%s) WHERE %s", n.Inputs[0].SQL(), joinedConditions)
+			return fmt.Sprintf("SELECT * FROM (%s) WHERE %s", n.Inputs[0].SQL(true), joinedConditions)
 		} else {
 			panic("Pick Columns node had more than one input")
 		}

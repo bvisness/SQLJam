@@ -31,7 +31,7 @@ func main() {
 	defer db.Close()
 
 	// init nodes
-	filmTable := node.NewTable("film")
+	filmTable := node.NewTable("film", "cool_films")
 	filmTable.Pos = rl.Vector2{60, 100}
 	nodes = append(nodes, filmTable)
 
@@ -100,10 +100,10 @@ func doFrame() {
 		isHover := CheckCollisionPointRec2D(rl.GetMousePosition(), nodeRect)
 		isClick := isHover && rl.IsMouseButtonPressed(rl.MouseLeftButton) // TODO: better clicking (on release)
 		if isHover {
-			rl.DrawText(node.SQL(), int32(nodeRect.X), int32(nodeRect.Y)-22, 20, rl.Black)
+			rl.DrawText(node.SQL(false), int32(nodeRect.X), int32(nodeRect.Y)-22, 20, rl.Black)
 		}
 		if isClick {
-			latestResult = doQuery(node.SQL())
+			latestResult = doQuery(node.SQL(false))
 		}
 	}
 

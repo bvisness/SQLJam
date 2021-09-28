@@ -7,6 +7,7 @@ type NodeData interface {
 type Table struct {
 	NodeData
 	Table string
+	Alias string
 }
 
 type PickColumns struct {
@@ -28,6 +29,11 @@ const (
 type CombineRows struct {
 	NodeData
 	CombinationType CombineType
+}
+
+type Join struct {
+	NodeData
+	Conditions []string
 }
 
 type Filter struct {
