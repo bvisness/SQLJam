@@ -2,10 +2,10 @@ package app
 
 import (
 	"fmt"
-	"github.com/bvisness/SQLJam/raygui"
 	"strings"
 
 	"github.com/bvisness/SQLJam/node"
+	"github.com/bvisness/SQLJam/raygui"
 	rl "github.com/gen2brain/raylib-go/raylib"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -25,7 +25,7 @@ func Main() {
 
 	font = rl.LoadFont("JetBrainsMono-Regular.ttf")
 	//rl.GenTextureMipmaps(&font.Texture) // kinda muddy? need second opinion
-	rl.SetTextureFilter(font.Texture, rl.FilterBilinear)   // FILTER_TRILINEAR requires generated mipmaps
+	rl.SetTextureFilter(font.Texture, rl.FilterBilinear) // FILTER_TRILINEAR requires generated mipmaps
 
 	close := openDB()
 	defer close()
@@ -92,9 +92,6 @@ func doFrame() {
 		cam.Target = rl.Vector2Subtract(panCamStart, mouseDelta) // camera moves opposite of mouse
 	}
 
-	rl.BeginMode2D(cam)
-	defer rl.EndMode2D()
-
 	// update nodes
 	for _, n := range nodes {
 		doNodeUpdate(n)
@@ -102,91 +99,92 @@ func doFrame() {
 
 	doLayout()
 
-	// draw lines
-	for _, n := range nodes {
-		if n.Snapped {
-			continue
-		}
-		for i, input := range n.Inputs {
-			rl.DrawLineBezier(input.OutputPinPos, n.InputPinPos[i], 2, rl.Black)
-		}
-	}
-
-	// draw nodes
-	for _, n := range nodes {
-		nodeRect := n.Rect()
-		rl.DrawRectangleRounded(nodeRect, 0.16, 6, n.Color)
-		//rl.DrawRectangleRoundedLines(nodeRect, 0.16, 6, 2, rl.Black)
-
-		titleBarRect := rl.Rectangle{nodeRect.X, nodeRect.Y, nodeRect.Width - 24, 24}
-		previewRect := rl.Rectangle{nodeRect.X + nodeRect.Width - 24, nodeRect.Y, 24, 24}
-
-		drawBasicText(n.Title, nodeRect.X + 6, nodeRect.Y + 4, 24, rl.Black)
-		drawBasicText("P", previewRect.X + 4, previewRect.Y + 10, 14, rl.Black)
-
-		for i, pinPos := range n.InputPinPos {
-			if n.Snapped && i == 0 {
+	rl.BeginMode2D(cam)
+	{
+		// draw lines
+		for _, n := range nodes {
+			if n.Snapped {
 				continue
 			}
-			rl.DrawCircle(int32(pinPos.X), int32(pinPos.Y), 6, rl.Black)
-		}
-		if !n.Snapped {
-			rl.DrawCircle(int32(n.OutputPinPos.X), int32(n.OutputPinPos.Y), 6, rl.Black)
-		}
-
-		titleHover := CheckCollisionPointRec2D(rl.GetMousePosition(), titleBarRect)
-		if titleHover {
-			drawBasicText(n.SQL(false), titleBarRect.X, titleBarRect.Y - 22, 20, rl.Black)
-		}
-		if titleHover && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
-			tryStartDrag(n, n.Pos)
+			for i, input := range n.Inputs {
+				rl.DrawLineBezier(input.OutputPinPos, n.InputPinPos[i], 2, rl.Black)
+			}
 		}
 
-		if draggingThis, done, canceled := dragState(n); draggingThis {
-			n.Snapped = false
-			n.Pos = dragNewPosition()
-			if done {
-				if canceled {
-					n.Pos = dragObjStart
+		// draw nodes
+		for _, n := range nodes {
+			nodeRect := n.Rect()
+			rl.DrawRectangleRounded(nodeRect, 0.16, 6, n.Color)
+			//rl.DrawRectangleRoundedLines(nodeRect, 0.16, 6, 2, rl.Black)
+
+			titleBarRect := rl.Rectangle{nodeRect.X, nodeRect.Y, nodeRect.Width - 24, 24}
+			previewRect := rl.Rectangle{nodeRect.X + nodeRect.Width - 24, nodeRect.Y, 24, 24}
+
+			drawBasicText(n.Title, nodeRect.X+6, nodeRect.Y+4, 24, rl.Black)
+			drawBasicText("P", previewRect.X+4, previewRect.Y+10, 14, rl.Black)
+
+			for i, pinPos := range n.InputPinPos {
+				if n.Snapped && i == 0 {
+					continue
+				}
+				rl.DrawCircle(int32(pinPos.X), int32(pinPos.Y), 6, rl.Black)
+			}
+			if !n.Snapped {
+				rl.DrawCircle(int32(n.OutputPinPos.X), int32(n.OutputPinPos.Y), 6, rl.Black)
+			}
+
+			titleHover := CheckCollisionPointRec2D(rl.GetMousePosition(), titleBarRect)
+			if titleHover {
+				drawBasicText(n.SQL(false), titleBarRect.X, titleBarRect.Y-22, 20, rl.Black)
+			}
+			if titleHover && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
+				tryStartDrag(n, n.Pos)
+			}
+
+			if draggingThis, done, canceled := dragState(n); draggingThis {
+				n.Snapped = false
+				n.Pos = dragNewPosition()
+				if done {
+					if canceled {
+						n.Pos = dragObjStart
+					} else {
+						trySnapNode(n)
+					}
+				}
+			}
+
+			previewHover := CheckCollisionPointRec2D(rl.GetMousePosition(), previewRect)
+			if previewHover && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
+				latestResult = doQuery(n.SQL(false))
+			}
+
+			doNodeUI(n)
+		}
+
+		// display query results (temporary)
+		if latestResult != nil {
+			rowPos := rl.Vector2{60, 400}
+			for i := -1; i < len(latestResult.Rows); i++ {
+				if i < 0 {
+					// print headers
+					drawBasicText(strings.Join(latestResult.Columns, "    "), rowPos.X, rowPos.Y, 20, rl.Black)
 				} else {
-					trySnapNode(n)
-				}
-			}
-		}
+					row := latestResult.Rows[i]
+					valStrings := make([]string, len(row))
+					for i, v := range row {
+						valStrings[i] = fmt.Sprintf("%v", v)
+					}
 
-		previewHover := CheckCollisionPointRec2D(rl.GetMousePosition(), previewRect)
-		if previewHover && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
-			latestResult = doQuery(n.SQL(false))
-		}
-
-		rl.DrawRectangleRec(n.UIRect, rl.Beige)
-
-		doNodeUI(n)
-	}
-
-	// display query results (temporary)
-	if latestResult != nil {
-		rowPos := rl.Vector2{60, 400}
-		for i := -1; i < len(latestResult.Rows); i++ {
-			if i < 0 {
-				// print headers
-				drawBasicText(strings.Join(latestResult.Columns, "    "), rowPos.X, rowPos.Y, 20, rl.Black)
-			} else {
-				row := latestResult.Rows[i]
-				valStrings := make([]string, len(row))
-				for i, v := range row {
-					valStrings[i] = fmt.Sprintf("%v", v)
+					drawBasicText(strings.Join(valStrings, "    "), rowPos.X, rowPos.Y, 20, rl.Black)
 				}
 
-				drawBasicText(strings.Join(valStrings, "    "), rowPos.X, rowPos.Y, 20, rl.Black)
+				rowPos.Y += 24
 			}
-
-			rowPos.Y += 24
 		}
 	}
+	rl.EndMode2D()
 
 	drawToolbar()
-
 }
 
 func drawToolbar() {
@@ -205,14 +203,12 @@ func drawToolbar() {
 
 	if raygui.Button(rl.Rectangle{
 		X:      20,
-		Y:      float32(toolbarHeight / 2) - float32(buttHeight/ 2),
+		Y:      float32(toolbarHeight/2) - float32(buttHeight/2),
 		Width:  100,
 		Height: float32(buttHeight),
 	}, "Add Table") {
 		fmt.Println("Adding a Table")
 	}
-
-
 }
 
 func CheckCollisionPointRec2D(point rl.Vector2, rec rl.Rectangle) bool {
@@ -236,13 +232,12 @@ func doLayout() {
 	*/
 
 	const titleBarHeight = 24
-	const pinStartHeight = 36
+	const uiPadding = 10
+	const pinStartHeight = titleBarHeight + uiPadding + 6 // TODO: pins are really wrong, and this should be done per node on update
 	const pinDefaultSpacing = 36
 	const snapRectHeight = 30
 
 	basicLayout := func(n *node.Node) {
-		// TODO: do different stuff for different node types
-
 		width := 280 // TODO: Dynamic width based on specific contents
 		inputHeight := titleBarHeight
 		outputHeight := titleBarHeight
@@ -262,7 +257,6 @@ func doLayout() {
 			pinHeight += pinDefaultSpacing
 			inputHeight += pinDefaultSpacing
 		}
-		inputHeight += 10
 
 		if !n.Snapped {
 			outputHeight += pinDefaultSpacing
@@ -272,6 +266,8 @@ func doLayout() {
 		if outputHeight > height {
 			height = outputHeight
 		}
+
+		height += uiPadding
 
 		n.Size = rl.Vector2{float32(width), float32(height)}
 	}
@@ -332,7 +328,12 @@ func doLayout() {
 				}
 			}
 		}
-		n.UIRect = rl.Rectangle{n.Pos.X + 10, n.Pos.Y + titleBarHeight, n.Size.X - 20, n.Size.Y - titleBarHeight - 10}
+		n.UIRect = rl.Rectangle{
+			n.Pos.X + uiPadding,
+			n.Pos.Y + titleBarHeight + uiPadding,
+			n.Size.X - 2*uiPadding,
+			n.Size.Y - titleBarHeight - 2*uiPadding,
+		}
 		n.SnapTargetRect = rl.Rectangle{n.Pos.X, n.Pos.Y + n.Size.Y - snapRectHeight, n.Size.X, snapRectHeight}
 	}
 }
