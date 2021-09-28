@@ -54,7 +54,7 @@ func main() {
 
 
 	ctxTree := node.NewRecursiveGenerated(pick) // try recursive gen
-	fmt.Println(ctxTree.ToSql())
+	fmt.Println(ctxTree.SourceToSql())
 }
 
 var latestResult *queryResult
