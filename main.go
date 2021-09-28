@@ -36,7 +36,7 @@ func main() {
 	nodes = append(nodes, filmTable)
 
 	filter := node.NewFilter([]string{"rating = 'PG'", "rental_rate < 3"})
-	filter.Pos = rl.Vector2{160, 100}
+	filter.Pos = rl.Vector2{360, 100}
 	filter.Inputs[0] = filmTable
 	nodes = append(nodes, filter)
 
@@ -98,17 +98,51 @@ func doFrame() {
 		return rl.CheckCollisionPointRec(point, screenRec)
 	}
 
-	for _, node := range nodes {
-		nodeRect := rl.Rectangle{node.Pos.X, node.Pos.Y, 80, 60}
-		rl.DrawRectangleLinesEx(nodeRect, 2, rl.Black)
+	if rl.IsMouseButtonUp(rl.MouseLeftButton) {
+		clearDrag()
+	}
 
-		isHover := CheckCollisionPointRec2D(rl.GetMousePosition(), nodeRect)
-		isClick := isHover && rl.IsMouseButtonPressed(rl.MouseLeftButton) // TODO: better clicking (on release)
-		if isHover {
-			rl.DrawText(node.SQL(false), int32(nodeRect.X), int32(nodeRect.Y)-22, 20, rl.Black)
+	doLayout()
+
+	// draw lines
+	for _, n := range nodes {
+		for i, input := range n.Inputs {
+			rl.DrawLineEx(input.OutputPinPos, n.InputPinPos[i], 2, rl.Black)
 		}
-		if isClick {
-			latestResult = doQuery(node.SQL(false))
+	}
+
+	// draw nodes
+	for _, n := range nodes {
+		nodeRect := n.Rect()
+		rl.DrawRectangleRounded(nodeRect, 0.08, 6, rl.LightGray)
+		rl.DrawRectangleRoundedLines(nodeRect, 0.08, 6, 2, rl.Black)
+
+		titleBarRect := rl.Rectangle{nodeRect.X, nodeRect.Y, nodeRect.Width - 24, 24}
+		previewRect := rl.Rectangle{nodeRect.X + nodeRect.Width - 24, nodeRect.Y, 24, 24}
+
+		rl.DrawText(n.Title, int32(nodeRect.X)+6, int32(nodeRect.Y)+4, 20, rl.Black) // title bar
+		rl.DrawText("P", int32(previewRect.X)+4, int32(previewRect.Y)+10, 10, rl.Black)
+
+		for _, pinPos := range n.InputPinPos {
+			rl.DrawCircle(int32(pinPos.X), int32(pinPos.Y), 6, rl.Black)
+		}
+		rl.DrawCircle(int32(n.OutputPinPos.X), int32(n.OutputPinPos.Y), 6, rl.Black)
+
+		titleHover := CheckCollisionPointRec2D(rl.GetMousePosition(), titleBarRect)
+		if titleHover {
+			rl.DrawText(n.SQL(false), int32(titleBarRect.X), int32(titleBarRect.Y)-22, 20, rl.Black)
+		}
+		if titleHover && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
+			tryStartDrag(n, n.Pos)
+		}
+
+		if d, ok := dragging.(*node.Node); ok && d == n {
+			n.Pos = dragNewPosition()
+		}
+
+		previewHover := CheckCollisionPointRec2D(rl.GetMousePosition(), previewRect)
+		if previewHover && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
+			latestResult = doQuery(n.SQL(false))
 		}
 	}
 
@@ -176,4 +210,69 @@ func doQuery(q string) *queryResult {
 	}
 
 	return &res
+}
+
+var dragging interface{}
+var dragMouseStart rl.Vector2
+var dragObjStart rl.Vector2
+
+func tryStartDrag(thing interface{}, objStart rl.Vector2) {
+	if dragging != nil {
+		return
+	}
+
+	dragging = thing
+	dragMouseStart = rl.GetMousePosition()
+	dragObjStart = objStart
+}
+
+func clearDrag() {
+	dragging = nil
+}
+
+func dragOffset() rl.Vector2 {
+	return rl.Vector2Subtract(rl.GetMousePosition(), dragMouseStart)
+}
+
+func dragNewPosition() rl.Vector2 {
+	return rl.Vector2Add(dragObjStart, dragOffset())
+}
+
+func doLayout() {
+	const titleBarHeight = 24
+	const pinDefaultSpacing = 36
+
+	for _, n := range nodes {
+		// TODO: do different stuff for different node types
+
+		width := 280
+		pinStartHeight := 36
+		inputHeight := titleBarHeight
+		outputHeight := titleBarHeight
+
+		if len(n.InputPinPos) != len(n.Inputs) {
+			n.InputPinPos = make([]rl.Vector2, len(n.Inputs))
+		}
+
+		pinHeight := pinStartHeight
+		for i := range n.Inputs {
+			n.InputPinPos[i] = rl.Vector2{n.Pos.X - 1, n.Pos.Y + float32(pinHeight)}
+			pinHeight += pinDefaultSpacing
+			inputHeight += pinDefaultSpacing
+		}
+		inputHeight += 20
+
+		if !n.Snapped {
+			outputHeight += pinDefaultSpacing
+		}
+
+		height := inputHeight
+		if outputHeight > height {
+			height = outputHeight
+		}
+
+		n.Size = rl.Vector2{float32(width), float32(height)}
+
+		n.OutputPinPos = rl.Vector2{n.Pos.X + n.Size.X + 1, n.Pos.Y + float32(pinStartHeight)}
+	}
 }

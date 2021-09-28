@@ -15,16 +15,19 @@ type Node struct {
 
 	// UI data
 	Pos     rl.Vector2
+	Size    rl.Vector2
+	Title   string
 	CanSnap bool // can snap to another node for its primary input
 	Snapped bool
 
 	// calculated fields
 	InputPinPos  []rl.Vector2
-	OutputPinPos []rl.Vector2
+	OutputPinPos rl.Vector2
 }
 
 func NewTable(table string, alias string) *Node {
 	return &Node{
+		Title:   "Table",
 		CanSnap: false,
 		Data: &Table{
 			Table: table,
@@ -35,6 +38,7 @@ func NewTable(table string, alias string) *Node {
 
 func NewPickColumns(alias string) *Node {
 	return &Node{
+		Title:   "Pick Columns",
 		CanSnap: true,
 		Inputs:  make([]*Node, 1),
 		Data: &PickColumns{
@@ -45,6 +49,7 @@ func NewPickColumns(alias string) *Node {
 
 func NewFilter(conditions []string) *Node {
 	return &Node{
+		Title:   "Filter",
 		CanSnap: true,
 		Inputs:  make([]*Node, 1),
 		Data: &Filter{
@@ -54,8 +59,10 @@ func NewFilter(conditions []string) *Node {
 }
 
 func NewCombineRows(combineType CombineType) *Node {
-	return &Node {
+	return &Node{
+		Title:   "Combine Rows",
 		CanSnap: false,
+		Inputs:  make([]*Node, 1),
 		Data: &CombineRows{
 			CombinationType: combineType,
 		},
@@ -184,18 +191,18 @@ func (n *Node) SQL(hasParent bool) string {
 		if len(n.Inputs) == 2 {
 			used := ""
 			switch d.CombinationType {
-				case Union:
-					used = "UNION"
-				case Intersect:
-					used = "INTERSECT"
-				case Except:
-					used = "EXCEPT"
-				case UnionAll:
-					used = "UNION ALL"
-				case IntersectAll:
-					used = "INTERSECT ALL"
-				case ExceptAll:
-					used = "EXCEPT ALL"
+			case Union:
+				used = "UNION"
+			case Intersect:
+				used = "INTERSECT"
+			case Except:
+				used = "EXCEPT"
+			case UnionAll:
+				used = "UNION ALL"
+			case IntersectAll:
+				used = "INTERSECT ALL"
+			case ExceptAll:
+				used = "EXCEPT ALL"
 			}
 			return fmt.Sprintf("%s %s %s", n.Inputs[0], used, n.Inputs[1])
 		} else {
@@ -204,4 +211,8 @@ func (n *Node) SQL(hasParent bool) string {
 	default:
 		return "SELECT NULL LIMIT 0" // empty result set
 	}
+}
+
+func (n *Node) Rect() rl.Rectangle {
+	return rl.Rectangle{n.Pos.X, n.Pos.Y, n.Size.X, n.Size.Y}
 }
