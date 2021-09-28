@@ -2,31 +2,33 @@ package main
 
 import (
 	"fmt"
-	"github.com/bvisness/SQLJam/sqljam/nodes"
+	"github.com/bvisness/SQLJam/node"
 )
 
+var nodes []*node.Node
 
 func main() {
-	/*
-	inA := sqljam.SqlNodePin{}
-	outA := sqljam.SqlNodePin{}
-	a := sqljam.SqlNode{}
+		// init nodes
+	filmTable := node.NewTable("film", "cool_films")
+	nodes = append(nodes, filmTable)
 
-	a.AddInputPin(&inA)
-	a.AddOutputPin(&outA)
+	filter := node.NewFilter([]string{"rating = 'PG'", "rental_rate < 3"})
+	filter.Inputs[0] = filmTable
+	nodes = append(nodes, filter)
 
-	inB := sqljam.SqlNodePin{}
-	outB := sqljam.SqlNodePin{}
-	b := sqljam.SqlNode{}
+	pick := node.NewPickColumns("test_alias")
+	pick.Data.(*node.PickColumns).Cols = append(pick.Data.(*node.PickColumns).Cols, "title", "description", "release_year")
+	pick.Inputs[0] = filter
+	nodes = append(nodes, pick)
 
-	b.AddInputPin(&inB)
-	b.AddOutputPin(&outB)
+	pick2 := node.NewPickColumns("other_alias")
+	pick2.Data.(*node.PickColumns).Cols = append(pick2.Data.(*node.PickColumns).Cols, "title")
+	pick2.Inputs[0] = pick
+	nodes = append(nodes, pick2)
 
-	outA.ConnectTo(&inB)
-
-	fmt.Println(a)
-	*/
-	src := nodes.SqlNodeTable{TableSource: "SAKILA.FILM"}
-
-	fmt.Println(src)
+	// Recursive generate the context tree
+	ctxTree := node.NewRecursiveGenerated(pick2)
+	// Turn it into SQL
+	//fmt.Println(fmt.Sprintf("Pick2 SRC: %s", ctxTree.Source))
+	fmt.Println(ctxTree.SourceToSql())
 }

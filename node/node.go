@@ -2,6 +2,7 @@ package node
 
 import (
 	"fmt"
+	"reflect"
 	"sort"
 	"strings"
 
@@ -27,9 +28,7 @@ func NewTable(table string, alias string) *Node {
 		CanSnap: false,
 		Data: &Table{
 			Table: table,
-			NodeAlias: NodeAlias{
-				Alias: alias,
-			},
+			Alias: alias,
 		},
 	}
 }
@@ -39,10 +38,7 @@ func NewPickColumns(alias string) *Node {
 		CanSnap: true,
 		Inputs:  make([]*Node, 1),
 		Data: &PickColumns{
-			Cols: make(map[string]bool),
-			NodeAlias: NodeAlias{
-				Alias: alias,
-			},
+			Alias: alias,
 		},
 	}
 }
@@ -66,6 +62,79 @@ func NewCombineRows(combineType CombineType) *Node {
 	}
 }
 
+func NewNodeGenContext() *NodeGenContext {
+	return &NodeGenContext{}
+}
+
+func NewRecursiveGenerated(n *Node) *NodeGenContext {
+	return NewNodeGenContext().RecursiveGenerate(n)
+}
+
+func (ctx *NodeGenContext) SourceToSql() string {
+	sql := "SELECT "
+
+	if len(ctx.Cols) == 0 {
+		sql += "*"
+	} else {
+		sql += strings.Join(ctx.Cols, ", ")
+	}
+
+	if ctx.Source == nil {
+		panic("We can't generate SQL if our gen context has no source!")
+	} else {
+		fmt.Println(fmt.Sprintf("child element: %s ||| %s", reflect.TypeOf(ctx.Source), ctx.Source.SourceToSql()))
+		fmt.Println(fmt.Sprintf("it's alias is: %s ### %s", ctx.Source.SourceAlias(), ctx.Alias))
+		sql += fmt.Sprintf(" FROM (%s)", ctx.Source.SourceToSql())
+
+		// Currently only shows alias if it's not empty
+		if ctx.Source.SourceAlias() != "" {
+			sql += fmt.Sprintf(" AS %s", ctx.Alias)
+		}
+	}
+
+	if len(ctx.FilterConditions) > 0 {
+		sql += " WHERE "
+		sql += strings.Join(ctx.FilterConditions, " AND ")
+	}
+
+	// handle combining here
+
+	return sql
+}
+
+func (ctx *NodeGenContext) RecursiveGenerate(n *Node) *NodeGenContext {
+	switch d := n.Data.(type) {
+	case *Table:
+		ctx.Source = d
+		ctx.Alias = d.Alias
+		ctx.RecursiveGenerateAllChildren(n)
+	case *PickColumns:
+		if len(ctx.Cols) > 0 {
+			//ctx.SqlSource
+			fmt.Println("Starting nested pick columns ctx gen")
+			ctx.Source = NewRecursiveGenerated(n)
+			ctx.Alias = d.Alias
+			// ctx.Alias = ctx.Source.Alias?
+			fmt.Println(fmt.Sprintf("Doot %s", reflect.TypeOf(ctx.Source)))
+		} else {
+			//fmt.Println(fmt.Sprintf("Setting cols on %s - %s", &ctx.Source, reflect.TypeOf(ctx.Source)))
+			ctx.Cols = d.Cols
+			ctx.RecursiveGenerateAllChildren(n)
+		}
+	case *Filter:
+		ctx.FilterConditions = append(ctx.FilterConditions, d.Conditions...)
+		ctx.RecursiveGenerateAllChildren(n)
+	}
+	return ctx
+}
+
+func (ctx *NodeGenContext) RecursiveGenerateAllChildren(n *Node) *NodeGenContext {
+	for _, value := range n.Inputs {
+		ctx.RecursiveGenerate(value)
+	}
+	return ctx
+}
+
 func (n *Node) SQL(hasParent bool) string {
 	// TODO: Optimizations :P
 
@@ -83,12 +152,7 @@ func (n *Node) SQL(hasParent bool) string {
 		return ourQuery
 	case *PickColumns:
 		// TODO: Someday allow custom order of columns
-		var cols []string
-		for col, yep := range d.Cols {
-			if yep {
-				cols = append(cols, col)
-			}
-		}
+		var cols = d.Cols
 		sort.Strings(cols)
 		colsJoined := strings.Join(cols, ", ")
 

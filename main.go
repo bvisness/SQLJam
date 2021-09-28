@@ -42,14 +42,19 @@ func main() {
 
 	pick := node.NewPickColumns("test_alias")
 	pick.Pos = rl.Vector2{260, 100}
-	pick.Data.(*node.PickColumns).Cols["title"] = true
+	pick.Data.(*node.PickColumns).Cols = append(pick.Data.(*node.PickColumns).Cols, "title")
 	pick.Inputs[0] = filter
 	nodes = append(nodes, pick)
+
 
 	// main frame loop
 	for !rl.WindowShouldClose() {
 		doFrame()
 	}
+
+
+	ctxTree := node.NewRecursiveGenerated(pick) // try recursive gen
+	fmt.Println(ctxTree.ToSql())
 }
 
 var latestResult *queryResult
