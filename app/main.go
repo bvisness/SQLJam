@@ -1,9 +1,7 @@
 package app
 
 import (
-	"database/sql"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/bvisness/SQLJam/node"
@@ -14,7 +12,6 @@ import (
 const screenWidth = 1920
 const screenHeight = 1080
 
-var db *sql.DB
 var nodes []*node.Node
 
 func Main() {
@@ -23,12 +20,8 @@ func Main() {
 
 	rl.SetTargetFPS(120) // wew
 
-	var err error
-	db, err = sql.Open("sqlite3", "./sakila.db")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
+	close := openDB()
+	defer close()
 
 	// init nodes
 	filmTable := node.NewTable("film", "cool_films")
@@ -181,119 +174,6 @@ func CheckCollisionPointRec2D(point rl.Vector2, rec rl.Rectangle) bool {
 		Height: rec.Height,
 	}
 	return rl.CheckCollisionPointRec(point, screenRec)
-}
-
-// TODO: Surely this is pretty temporary. I just need to display boring query output.
-type queryResult struct {
-	Columns []string
-	Rows    [][]interface{}
-}
-
-func doQuery(q string) *queryResult {
-	rows, err := db.Query(q)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer rows.Close()
-
-	var res queryResult
-
-	res.Columns, err = rows.Columns()
-	if err != nil {
-		panic(err)
-	}
-
-	for rows.Next() {
-		row := make([]interface{}, len(res.Columns))
-		rowPointers := make([]interface{}, len(row))
-		for i := range row {
-			rowPointers[i] = &row[i]
-		}
-
-		err = rows.Scan(rowPointers...)
-		if err != nil {
-			panic(err)
-		}
-		res.Rows = append(res.Rows, row)
-	}
-
-	err = rows.Err()
-	if err != nil {
-		panic(err)
-	}
-
-	return &res
-}
-
-var dragging bool
-var dragCanceled bool
-var dragKey string
-var dragMouseStart rl.Vector2
-var dragObjStart rl.Vector2
-
-func getDragKey(key interface{}) string {
-	switch kt := key.(type) {
-	case string:
-		return kt
-	default:
-		return fmt.Sprintf("%p", key)
-	}
-}
-
-// Call once per frame at the start of the frame.
-func updateDrag() {
-	if rl.IsKeyPressed(rl.KeyEscape) {
-		dragging = false
-		dragCanceled = true
-	} else if rl.IsMouseButtonReleased(rl.MouseLeftButton) {
-		dragging = false
-	} else if rl.IsMouseButtonUp(rl.MouseLeftButton) {
-		dragging = false
-		dragCanceled = true
-		dragKey = ""
-		dragMouseStart = rl.Vector2{}
-		dragObjStart = rl.Vector2{}
-	}
-}
-
-func tryStartDrag(key interface{}, objStart rl.Vector2) {
-	if dragging {
-		return
-	}
-
-	dragging = true
-	dragCanceled = false
-	dragKey = getDragKey(key)
-	dragMouseStart = rl.GetMousePosition()
-	dragObjStart = objStart
-}
-
-func dragOffset() rl.Vector2 {
-	if !dragging && dragKey == "" {
-		return rl.Vector2{}
-	}
-	return rl.Vector2Subtract(rl.GetMousePosition(), dragMouseStart)
-}
-
-func dragNewPosition() rl.Vector2 {
-	return rl.Vector2Add(dragObjStart, dragOffset())
-}
-
-// Pass in an key and it will tell you the relevant drag state for that thing.
-// matchesKey will be true if that object is the one currently being dragged.
-// done will be true if the drag is complete this frame.
-// canceled will be true if the drag is done but was canceled.
-func dragState(key interface{}) (matchesKey bool, done bool, canceled bool) {
-	matchesKey = true
-	if key != nil {
-		matchesKey = dragKey == getDragKey(key)
-	}
-
-	if !dragging && dragKey != "" && matchesKey {
-		return matchesKey, true, dragCanceled
-	} else {
-		return matchesKey, false, false
-	}
 }
 
 func doLayout() {
