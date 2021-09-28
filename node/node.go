@@ -32,6 +32,7 @@ func NewTable(table string, alias string) *Node {
 	return &Node{
 		Title:   "Table",
 		CanSnap: false,
+		Color: rl.NewColor(242, 201, 76, 255),
 		Data: &Table{
 			Table: table,
 			Alias: alias,
@@ -43,6 +44,7 @@ func NewPickColumns(alias string) *Node {
 	return &Node{
 		Title:   "Pick Columns",
 		CanSnap: true,
+		Color: rl.NewColor(244, 143, 177, 255),
 		Inputs:  make([]*Node, 1),
 		Data: &PickColumns{
 			Alias: alias,
@@ -54,6 +56,7 @@ func NewFilter(conditions []string) *Node {
 	return &Node{
 		Title:   "Filter",
 		CanSnap: true,
+		Color: rl.NewColor(111, 207, 151, 255),
 		Inputs:  make([]*Node, 1),
 		Data: &Filter{
 			Conditions: conditions,

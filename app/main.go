@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"github.com/bvisness/SQLJam/raygui"
 	"strings"
 
 	"github.com/bvisness/SQLJam/node"
@@ -18,7 +19,8 @@ func Main() {
 	rl.InitWindow(screenWidth, screenHeight, "SQL Jam")
 	defer rl.CloseWindow()
 
-	rl.SetTargetFPS(120) // wew
+	// much fps or not you decide
+	rl.SetTargetFPS(int32(rl.GetMonitorRefreshRate(rl.GetCurrentMonitor())))
 
 	close := openDB()
 	defer close()
@@ -34,7 +36,7 @@ func Main() {
 	nodes = append(nodes, filter)
 
 	pick := node.NewPickColumns("test_alias")
-	pick.Pos = rl.Vector2{260, 100}
+	pick.Pos = rl.Vector2{660, 100}
 	pick.Data.(*node.PickColumns).Cols = append(pick.Data.(*node.PickColumns).Cols, "title")
 	pick.Inputs[0] = filter
 	nodes = append(nodes, pick)
@@ -97,8 +99,8 @@ func doFrame() {
 	// draw nodes
 	for _, n := range nodes {
 		nodeRect := n.Rect()
-		rl.DrawRectangleRounded(nodeRect, 0.08, 6, rl.LightGray)
-		rl.DrawRectangleRoundedLines(nodeRect, 0.08, 6, 2, rl.Black)
+		rl.DrawRectangleRounded(nodeRect, 0.16, 6, n.Color)
+		//rl.DrawRectangleRoundedLines(nodeRect, 0.16, 6, 2, rl.Black)
 
 		titleBarRect := rl.Rectangle{nodeRect.X, nodeRect.Y, nodeRect.Width - 24, 24}
 		previewRect := rl.Rectangle{nodeRect.X + nodeRect.Width - 24, nodeRect.Y, 24, 24}
@@ -160,6 +162,35 @@ func doFrame() {
 			rowPos.Y += 24
 		}
 	}
+
+	drawToolbar()
+
+}
+
+func drawToolbar() {
+	toolbarWidth := int32(rl.GetScreenWidth())
+	toolbarHeight := int32(64)
+	rl.DrawRectangle(0, 0, toolbarWidth, toolbarHeight, rl.ColorAlpha(rl.Black, 0.5))
+	rl.DrawLine(0, toolbarHeight, toolbarWidth, toolbarHeight, rl.Black)
+	rl.DrawLineEx(
+		rl.Vector2{Y: float32(toolbarHeight)},
+		rl.Vector2{X: float32(toolbarWidth), Y: float32(toolbarHeight)},
+		5,
+		rl.Black,
+	)
+
+	buttHeight := 40 // thicc
+
+	if raygui.Button(rl.Rectangle{
+		X:      20,
+		Y:      float32(toolbarHeight / 2) - float32(buttHeight/ 2),
+		Width:  100,
+		Height: float32(buttHeight),
+	}, "Add Table") {
+		fmt.Println("Adding a Table")
+	}
+
+
 }
 
 func makeDropdownOptions(opts ...string) string {
