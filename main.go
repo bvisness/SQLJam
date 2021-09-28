@@ -48,6 +48,7 @@ func main() {
 
 
 	// main frame loop
+	rl.SetExitKey(0)
 	for !rl.WindowShouldClose() {
 		doFrame()
 	}
@@ -73,6 +74,8 @@ func doFrame() {
 
 	rl.ClearBackground(rl.RayWhite)
 
+	updateDrag()
+
 	// Move camera
 	if rl.IsMouseButtonDown(rl.MouseMiddleButton) {
 		mousePos := rl.GetMousePosition()
@@ -88,26 +91,15 @@ func doFrame() {
 	rl.BeginMode2D(cam)
 	defer rl.EndMode2D()
 
-	CheckCollisionPointRec2D := func(point rl.Vector2, rec rl.Rectangle) bool {
-		screenRec := rl.Rectangle{
-			X:      rec.X - (cam.Target.X - cam.Offset.X),
-			Y:      rec.Y - (cam.Target.Y - cam.Offset.Y),
-			Width:  rec.Width,
-			Height: rec.Height,
-		}
-		return rl.CheckCollisionPointRec(point, screenRec)
-	}
-
-	if rl.IsMouseButtonUp(rl.MouseLeftButton) {
-		clearDrag()
-	}
-
 	doLayout()
 
 	// draw lines
 	for _, n := range nodes {
+		if n.Snapped {
+			continue
+		}
 		for i, input := range n.Inputs {
-			rl.DrawLineEx(input.OutputPinPos, n.InputPinPos[i], 2, rl.Black)
+			rl.DrawLineBezier(input.OutputPinPos, n.InputPinPos[i], 2, rl.Black)
 		}
 	}
 
@@ -123,10 +115,15 @@ func doFrame() {
 		rl.DrawText(n.Title, int32(nodeRect.X)+6, int32(nodeRect.Y)+4, 20, rl.Black) // title bar
 		rl.DrawText("P", int32(previewRect.X)+4, int32(previewRect.Y)+10, 10, rl.Black)
 
-		for _, pinPos := range n.InputPinPos {
+		for i, pinPos := range n.InputPinPos {
+			if n.Snapped && i == 0 {
+				continue
+			}
 			rl.DrawCircle(int32(pinPos.X), int32(pinPos.Y), 6, rl.Black)
 		}
-		rl.DrawCircle(int32(n.OutputPinPos.X), int32(n.OutputPinPos.Y), 6, rl.Black)
+		if !n.Snapped {
+			rl.DrawCircle(int32(n.OutputPinPos.X), int32(n.OutputPinPos.Y), 6, rl.Black)
+		}
 
 		titleHover := CheckCollisionPointRec2D(rl.GetMousePosition(), titleBarRect)
 		if titleHover {
@@ -136,8 +133,16 @@ func doFrame() {
 			tryStartDrag(n, n.Pos)
 		}
 
-		if d, ok := dragging.(*node.Node); ok && d == n {
+		if draggingThis, done, canceled := dragState(n); draggingThis {
+			n.Snapped = false
 			n.Pos = dragNewPosition()
+			if done {
+				if canceled {
+					n.Pos = dragObjStart
+				} else {
+					trySnapNode(n)
+				}
+			}
 		}
 
 		previewHover := CheckCollisionPointRec2D(rl.GetMousePosition(), previewRect)
@@ -168,6 +173,16 @@ func doFrame() {
 
 func makeDropdownOptions(opts ...string) string {
 	return strings.Join(opts, ";")
+}
+
+func CheckCollisionPointRec2D(point rl.Vector2, rec rl.Rectangle) bool {
+	screenRec := rl.Rectangle{
+		X:      rec.X - (cam.Target.X - cam.Offset.X),
+		Y:      rec.Y - (cam.Target.Y - cam.Offset.Y),
+		Width:  rec.Width,
+		Height: rec.Height,
+	}
+	return rl.CheckCollisionPointRec(point, screenRec)
 }
 
 // TODO: Surely this is pretty temporary. I just need to display boring query output.
@@ -212,25 +227,53 @@ func doQuery(q string) *queryResult {
 	return &res
 }
 
-var dragging interface{}
+var dragging bool
+var dragCanceled bool
+var dragKey string
 var dragMouseStart rl.Vector2
 var dragObjStart rl.Vector2
 
-func tryStartDrag(thing interface{}, objStart rl.Vector2) {
-	if dragging != nil {
+func getDragKey(key interface{}) string {
+	switch kt := key.(type) {
+	case string:
+		return kt
+	default:
+		return fmt.Sprintf("%p", key)
+	}
+}
+
+// Call once per frame at the start of the frame.
+func updateDrag() {
+	if rl.IsKeyPressed(rl.KeyEscape) {
+		dragging = false
+		dragCanceled = true
+	} else if rl.IsMouseButtonReleased(rl.MouseLeftButton) {
+		dragging = false
+	} else if rl.IsMouseButtonUp(rl.MouseLeftButton) {
+		dragging = false
+		dragCanceled = true
+		dragKey = ""
+		dragMouseStart = rl.Vector2{}
+		dragObjStart = rl.Vector2{}
+	}
+}
+
+func tryStartDrag(key interface{}, objStart rl.Vector2) {
+	if dragging {
 		return
 	}
 
-	dragging = thing
+	dragging = true
+	dragCanceled = false
+	dragKey = getDragKey(key)
 	dragMouseStart = rl.GetMousePosition()
 	dragObjStart = objStart
 }
 
-func clearDrag() {
-	dragging = nil
-}
-
 func dragOffset() rl.Vector2 {
+	if !dragging && dragKey == "" {
+		return rl.Vector2{}
+	}
 	return rl.Vector2Subtract(rl.GetMousePosition(), dragMouseStart)
 }
 
@@ -238,29 +281,61 @@ func dragNewPosition() rl.Vector2 {
 	return rl.Vector2Add(dragObjStart, dragOffset())
 }
 
-func doLayout() {
-	const titleBarHeight = 24
-	const pinDefaultSpacing = 36
+// Pass in an key and it will tell you the relevant drag state for that thing.
+// matchesKey will be true if that object is the one currently being dragged.
+// done will be true if the drag is complete this frame.
+// canceled will be true if the drag is done but was canceled.
+func dragState(key interface{}) (matchesKey bool, done bool, canceled bool) {
+	matchesKey = true
+	if key != nil {
+		matchesKey = dragKey == getDragKey(key)
+	}
 
-	for _, n := range nodes {
+	if !dragging && dragKey != "" && matchesKey {
+		return matchesKey, true, dragCanceled
+	} else {
+		return matchesKey, false, false
+	}
+}
+
+func doLayout() {
+	/*
+		Layout algo is as follows:
+
+		- Calculate heights, widths, and input pins of all unsnapped nodes
+		- Calculate heights, widths, and input pins of all snapped nodes
+		- Do a pass across all nodes making them wider if necessary (yay snapping!)
+		- Calculate output pins and final collisions of all nodes
+	*/
+
+	const titleBarHeight = 24
+	const pinStartHeight = 36
+	const pinDefaultSpacing = 36
+	const snapRectHeight = 30
+
+	basicLayout := func(n *node.Node) {
 		// TODO: do different stuff for different node types
 
-		width := 280
-		pinStartHeight := 36
+		width := 280 // TODO: Dynamic width based on specific contents
 		inputHeight := titleBarHeight
 		outputHeight := titleBarHeight
 
+		// init InputPinPos if necessary
 		if len(n.InputPinPos) != len(n.Inputs) {
 			n.InputPinPos = make([]rl.Vector2, len(n.Inputs))
 		}
 
 		pinHeight := pinStartHeight
 		for i := range n.Inputs {
+			if n.Snapped && i == 0 {
+				continue
+			}
+
 			n.InputPinPos[i] = rl.Vector2{n.Pos.X - 1, n.Pos.Y + float32(pinHeight)}
 			pinHeight += pinDefaultSpacing
 			inputHeight += pinDefaultSpacing
 		}
-		inputHeight += 20
+		inputHeight += 10
 
 		if !n.Snapped {
 			outputHeight += pinDefaultSpacing
@@ -272,7 +347,82 @@ func doLayout() {
 		}
 
 		n.Size = rl.Vector2{float32(width), float32(height)}
+	}
 
-		n.OutputPinPos = rl.Vector2{n.Pos.X + n.Size.X + 1, n.Pos.Y + float32(pinStartHeight)}
+	// unsnapped
+	for _, n := range nodes {
+		if !n.Snapped {
+			basicLayout(n)
+		}
+	}
+
+	// snapped
+	for _, n := range nodes {
+		if n.Snapped {
+			basicLayout(n)
+			parent := n.Inputs[0]
+			n.Pos = rl.Vector2{parent.Pos.X, parent.Pos.Y + parent.Size.Y + 20}
+		}
+	}
+
+	// fix sizing
+	for _, n := range nodes {
+		maxWidth := n.Size.X
+
+		current := n
+		for current != nil {
+			if current.Size.X > maxWidth {
+				maxWidth = current.Size.X
+			}
+			n.Size.X = maxWidth
+			current.Size.X = maxWidth
+
+			if len(current.Inputs) > 0 {
+				current = current.Inputs[0]
+			} else {
+				current = nil
+			}
+		}
+	}
+
+	// output pin positions (unsnapped)
+	for _, n := range nodes {
+		if !n.Snapped {
+			n.OutputPinPos = rl.Vector2{n.Pos.X + n.Size.X + 1, n.Pos.Y + float32(pinStartHeight)}
+		}
+	}
+
+	// final calculations
+	for _, n := range nodes {
+		if n.Snapped {
+			current := n
+			for current != nil {
+				n.OutputPinPos = current.OutputPinPos
+				if len(current.Inputs) > 0 {
+					current = current.Inputs[0]
+				} else {
+					current = nil
+				}
+			}
+		}
+		n.SnapTargetRect = rl.Rectangle{n.Pos.X, n.Pos.Y + n.Size.Y - snapRectHeight, n.Size.X, snapRectHeight}
+	}
+}
+
+func trySnapNode(n *node.Node) {
+	if !n.CanSnap {
+		return
+	}
+
+	for _, other := range nodes {
+		if n == other {
+			continue
+		}
+
+		if CheckCollisionPointRec2D(rl.GetMousePosition(), other.SnapTargetRect) {
+			n.Snapped = true
+			n.Inputs[0] = other
+			break
+		}
 	}
 }

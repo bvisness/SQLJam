@@ -21,8 +21,9 @@ type Node struct {
 	Snapped bool
 
 	// calculated fields
-	InputPinPos  []rl.Vector2
-	OutputPinPos rl.Vector2
+	InputPinPos    []rl.Vector2
+	OutputPinPos   rl.Vector2
+	SnapTargetRect rl.Rectangle
 }
 
 func NewTable(table string, alias string) *Node {
