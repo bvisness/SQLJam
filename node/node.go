@@ -24,6 +24,8 @@ type Node struct {
 	InputPinPos    []rl.Vector2
 	OutputPinPos   rl.Vector2
 	SnapTargetRect rl.Rectangle
+
+	Color rl.Color
 }
 
 func NewTable(table string, alias string) *Node {
@@ -78,6 +80,7 @@ func NewRecursiveGenerated(n *Node) *NodeGenContext {
 	return NewNodeGenContext().RecursiveGenerate(n)
 }
 
+// SourceToSql Turns a context tree into an SQL statement string
 func (ctx *NodeGenContext) SourceToSql() string {
 	sql := "SELECT "
 
@@ -110,6 +113,7 @@ func (ctx *NodeGenContext) SourceToSql() string {
 	return sql
 }
 
+// RecursiveGenerate Turns a node into a recursive context tree for SQL generation
 func (ctx *NodeGenContext) RecursiveGenerate(n *Node) *NodeGenContext {
 	switch d := n.Data.(type) {
 	case *Table:
@@ -118,14 +122,9 @@ func (ctx *NodeGenContext) RecursiveGenerate(n *Node) *NodeGenContext {
 		ctx.RecursiveGenerateAllChildren(n)
 	case *PickColumns:
 		if len(ctx.Cols) > 0 {
-			//ctx.SqlSource
-			fmt.Println("Starting nested pick columns ctx gen")
 			ctx.Source = NewRecursiveGenerated(n)
 			ctx.Alias = d.Alias
-			// ctx.Alias = ctx.Source.Alias?
-			fmt.Println(fmt.Sprintf("Doot %s", reflect.TypeOf(ctx.Source)))
 		} else {
-			//fmt.Println(fmt.Sprintf("Setting cols on %s - %s", &ctx.Source, reflect.TypeOf(ctx.Source)))
 			ctx.Cols = d.Cols
 			ctx.RecursiveGenerateAllChildren(n)
 		}
