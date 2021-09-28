@@ -14,6 +14,22 @@ type PickColumns struct {
 	Cols map[string]bool
 }
 
+type CombineType int
+
+const (
+	Union CombineType = iota + 1
+	Intersect
+	Except
+	UnionAll
+	IntersectAll
+	ExceptAll
+)
+
+type CombineRows struct {
+	NodeData
+	CombinationType CombineType
+}
+
 type Filter struct {
 	NodeData
 	Conditions []string // TODO: whatever data we actually need for our filter UI

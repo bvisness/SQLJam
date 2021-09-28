@@ -51,6 +51,15 @@ func NewFilter(conditions []string) *Node {
 	}
 }
 
+func NewCombineRows(combineType CombineType) *Node {
+	return &Node {
+		CanSnap: false,
+		Data: &CombineRows{
+			Type: combineType,
+		},
+	}
+}
+
 func (n *Node) SQL() string {
 	// TODO: Optimizations :P
 
@@ -90,6 +99,27 @@ func (n *Node) SQL() string {
 			return fmt.Sprintf("SELECT * FROM (%s) WHERE %s", n.Inputs[0].SQL(), joinedConditions)
 		} else {
 			panic("Pick Columns node had more than one input")
+		}
+	case *CombineRows:
+		if len(n.Inputs) == 2 {
+			used := ""
+			switch d.CombinationType {
+				case Union:
+					used = "UNION"
+				case Intersect:
+					used = "INTERSECT"
+				case Except:
+					used = "EXCEPT"
+				case UnionAll:
+					used = "UNION ALL"
+				case IntersectAll:
+					used = "INTERSECT ALL"
+				case ExceptAll:
+					used = "EXCEPT ALL"
+			}
+			return fmt.Sprintf("%s %s %s", n.Inputs[0], used, n.Inputs[1])
+		} else {
+			panic("Combine rows did not have two inputs")
 		}
 	default:
 		return "SELECT NULL LIMIT 0" // empty result set
