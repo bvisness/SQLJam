@@ -30,7 +30,8 @@ func openDB() func() {
 func doQuery(q string) *queryResult {
 	rows, err := db.Query(q)
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
+		return &queryResult{}
 	}
 	defer rows.Close()
 

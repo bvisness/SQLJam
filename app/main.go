@@ -95,6 +95,11 @@ func doFrame() {
 	rl.BeginMode2D(cam)
 	defer rl.EndMode2D()
 
+	// update nodes
+	for _, n := range nodes {
+		doNodeUpdate(n)
+	}
+
 	doLayout()
 
 	// draw lines
@@ -153,8 +158,13 @@ func doFrame() {
 		if previewHover && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
 			latestResult = doQuery(n.SQL(false))
 		}
+
+		rl.DrawRectangleRec(n.UIRect, rl.Beige)
+
+		doNodeUI(n)
 	}
 
+	// display query results (temporary)
 	if latestResult != nil {
 		rowPos := rl.Vector2{60, 400}
 		for i := -1; i < len(latestResult.Rows); i++ {
@@ -203,10 +213,6 @@ func drawToolbar() {
 	}
 
 
-}
-
-func makeDropdownOptions(opts ...string) string {
-	return strings.Join(opts, ";")
 }
 
 func CheckCollisionPointRec2D(point rl.Vector2, rec rl.Rectangle) bool {
@@ -326,6 +332,7 @@ func doLayout() {
 				}
 			}
 		}
+		n.UIRect = rl.Rectangle{n.Pos.X + 10, n.Pos.Y + titleBarHeight, n.Size.X - 20, n.Size.Y - titleBarHeight - 10}
 		n.SnapTargetRect = rl.Rectangle{n.Pos.X, n.Pos.Y + n.Size.Y - snapRectHeight, n.Size.X, snapRectHeight}
 	}
 }

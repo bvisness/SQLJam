@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/bvisness/SQLJam/raygui"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
@@ -24,6 +25,7 @@ type Node struct {
 	InputPinPos    []rl.Vector2
 	OutputPinPos   rl.Vector2
 	SnapTargetRect rl.Rectangle
+	UIRect         rl.Rectangle // roughly where the UI should fit
 
 	Color rl.Color
 }
@@ -36,6 +38,8 @@ func NewTable(table string, alias string) *Node {
 		Data: &Table{
 			Table: table,
 			Alias: alias,
+
+			TableDropdown: raygui.NewDropdownEx(),
 		},
 	}
 }

@@ -1,21 +1,24 @@
 package node
 
+import "github.com/bvisness/SQLJam/raygui"
+
 type NodeData interface {
 	_implNodeData() // delete if we ever actually put a meaningful method here
 }
-
 
 type SqlSource interface {
 	SourceToSql() string
 	SourceAlias() string
 }
 
-
 type Table struct {
 	NodeData
 	SqlSource
 	Alias string
 	Table string
+
+	// UI data
+	TableDropdown raygui.DropdownEx
 }
 
 func (t *Table) SourceToSql() string {
@@ -30,7 +33,7 @@ type PickColumns struct {
 	NodeData
 	SqlSource
 	Alias string
-	Cols []string
+	Cols  []string
 }
 
 func (pc *PickColumns) SourceAlias() string {
@@ -69,19 +72,15 @@ type Filter struct {
 
 type NodeGenContext struct {
 	SqlSource
-	Alias string
-	Cols []string
-	Source SqlSource // or NodeGenContext
-	Combines []NodeGenContext
-	Joins []NodeGenContext
-	JoinConditions []string
+	Alias            string
+	Cols             []string
+	Source           SqlSource // or NodeGenContext
+	Combines         []NodeGenContext
+	Joins            []NodeGenContext
+	JoinConditions   []string
 	FilterConditions []string
 }
 
 func (ctx *NodeGenContext) SourceAlias() string {
 	return ctx.Alias
 }
-
-
-
-
