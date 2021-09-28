@@ -14,6 +14,7 @@ const screenWidth = 1920
 const screenHeight = 1080
 
 var nodes []*node.Node
+var font rl.Font
 
 func Main() {
 	rl.InitWindow(screenWidth, screenHeight, "SQL Jam")
@@ -21,6 +22,10 @@ func Main() {
 
 	// much fps or not you decide
 	rl.SetTargetFPS(int32(rl.GetMonitorRefreshRate(rl.GetCurrentMonitor())))
+
+	font = rl.LoadFont("JetBrainsMono-Regular.ttf")
+	//rl.GenTextureMipmaps(&font.Texture) // kinda muddy? need second opinion
+	rl.SetTextureFilter(font.Texture, rl.FilterBilinear)   // FILTER_TRILINEAR requires generated mipmaps
 
 	close := openDB()
 	defer close()
@@ -47,6 +52,8 @@ func Main() {
 		doFrame()
 	}
 
+	rl.UnloadFont(font)
+
 	ctxTree := node.NewRecursiveGenerated(pick) // try recursive gen
 	fmt.Println(ctxTree.SourceToSql())
 }
@@ -60,6 +67,10 @@ var cam = rl.Camera2D{
 }
 var panMouseStart rl.Vector2
 var panCamStart rl.Vector2
+
+func drawBasicText(text string, x float32, y float32, size float32, color rl.Color) {
+	rl.DrawTextEx(font, text, rl.Vector2{X: x, Y: y}, size, 2, color)
+}
 
 func doFrame() {
 	rl.BeginDrawing()
@@ -105,8 +116,8 @@ func doFrame() {
 		titleBarRect := rl.Rectangle{nodeRect.X, nodeRect.Y, nodeRect.Width - 24, 24}
 		previewRect := rl.Rectangle{nodeRect.X + nodeRect.Width - 24, nodeRect.Y, 24, 24}
 
-		rl.DrawText(n.Title, int32(nodeRect.X)+6, int32(nodeRect.Y)+4, 20, rl.Black) // title bar
-		rl.DrawText("P", int32(previewRect.X)+4, int32(previewRect.Y)+10, 10, rl.Black)
+		drawBasicText(n.Title, nodeRect.X + 6, nodeRect.Y + 4, 24, rl.Black)
+		drawBasicText("P", previewRect.X + 4, previewRect.Y + 10, 14, rl.Black)
 
 		for i, pinPos := range n.InputPinPos {
 			if n.Snapped && i == 0 {
@@ -120,7 +131,7 @@ func doFrame() {
 
 		titleHover := CheckCollisionPointRec2D(rl.GetMousePosition(), titleBarRect)
 		if titleHover {
-			rl.DrawText(n.SQL(false), int32(titleBarRect.X), int32(titleBarRect.Y)-22, 20, rl.Black)
+			drawBasicText(n.SQL(false), titleBarRect.X, titleBarRect.Y - 22, 20, rl.Black)
 		}
 		if titleHover && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
 			tryStartDrag(n, n.Pos)
@@ -149,14 +160,15 @@ func doFrame() {
 		for i := -1; i < len(latestResult.Rows); i++ {
 			if i < 0 {
 				// print headers
-				rl.DrawText(strings.Join(latestResult.Columns, "    "), int32(rowPos.X), int32(rowPos.Y), 20, rl.Black)
+				drawBasicText(strings.Join(latestResult.Columns, "    "), rowPos.X, rowPos.Y, 20, rl.Black)
 			} else {
 				row := latestResult.Rows[i]
 				valStrings := make([]string, len(row))
 				for i, v := range row {
 					valStrings[i] = fmt.Sprintf("%v", v)
 				}
-				rl.DrawText(strings.Join(valStrings, "    "), int32(rowPos.X), int32(rowPos.Y), 20, rl.Black)
+
+				drawBasicText(strings.Join(valStrings, "    "), rowPos.X, rowPos.Y, 20, rl.Black)
 			}
 
 			rowPos.Y += 24
