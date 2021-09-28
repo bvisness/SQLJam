@@ -40,7 +40,7 @@ func main() {
 	filter.Inputs[0] = filmTable
 	nodes = append(nodes, filter)
 
-	pick := node.NewPickColumns()
+	pick := node.NewPickColumns("test_alias")
 	pick.Pos = rl.Vector2{260, 100}
 	pick.Data.(*node.PickColumns).Cols["title"] = true
 	pick.Inputs[0] = filter

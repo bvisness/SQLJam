@@ -4,14 +4,19 @@ type NodeData interface {
 	_impl() // delete if we ever actually put a meaningful method here
 }
 
+type NodeAlias struct {
+	Alias string
+}
+
 type Table struct {
 	NodeData
+	NodeAlias
 	Table string
-	Alias string
 }
 
 type PickColumns struct {
 	NodeData
+	NodeAlias
 	Cols map[string]bool
 }
 

@@ -27,17 +27,22 @@ func NewTable(table string, alias string) *Node {
 		CanSnap: false,
 		Data: &Table{
 			Table: table,
-			Alias: alias,
+			NodeAlias: NodeAlias{
+				Alias: alias,
+			},
 		},
 	}
 }
 
-func NewPickColumns() *Node {
+func NewPickColumns(alias string) *Node {
 	return &Node{
 		CanSnap: true,
 		Inputs:  make([]*Node, 1),
 		Data: &PickColumns{
 			Cols: make(map[string]bool),
+			NodeAlias: NodeAlias{
+				Alias: alias,
+			},
 		},
 	}
 }
@@ -66,15 +71,16 @@ func (n *Node) SQL(hasParent bool) string {
 
 	switch d := n.Data.(type) {
 	case *Table:
+		ourQuery := ""
 		if hasParent {
-			return d.Table
+			ourQuery += d.Table
 		} else {
-			if d.Alias == "" {
-				return fmt.Sprintf("SELECT * FROM (%s)", d.Table)
-			} else {
-				return fmt.Sprintf("SELECT * FROM (%s) AS %s", d.Table, d.Alias)
-			}
+			ourQuery += fmt.Sprintf("SELECT * FROM (%s)", d.Table)
 		}
+		if d.Alias != "" {
+			ourQuery += fmt.Sprintf(" AS %s", d.Alias)
+		}
+		return ourQuery
 	case *PickColumns:
 		// TODO: Someday allow custom order of columns
 		var cols []string
@@ -90,6 +96,7 @@ func (n *Node) SQL(hasParent bool) string {
 			// TODO: Return some kind of nice compile error
 			return "ERROR"
 		} else if len(n.Inputs) == 1 {
+
 			return fmt.Sprintf("SELECT %s FROM (%s)", colsJoined, n.Inputs[0].SQL(true))
 		} else {
 			panic("Pick Columns node had more than one input")
