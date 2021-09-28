@@ -6,7 +6,7 @@ import (
 	"log"
 	"strings"
 
-	gui2 "github.com/bvisness/SQLJam/raygui"
+	"github.com/bvisness/SQLJam/node"
 	rl "github.com/gen2brain/raylib-go/raylib"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -14,91 +14,128 @@ import (
 const screenWidth = 1920
 const screenHeight = 1080
 
-var ballPosition = rl.Vector2{screenWidth / 2, screenHeight / 2}
-
-var movies []string
+var db *sql.DB
+var nodes []*node.Node
 
 func main() {
-
-	rl.InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window")
+	rl.InitWindow(screenWidth, screenHeight, "SQL Jam")
 	defer rl.CloseWindow()
 
-	rl.SetTargetFPS(120)
+	rl.SetTargetFPS(120) // wew
 
-	fmt.Println(gui2.GetStyle(0, 0))
-
-	db, err := sql.Open("sqlite3", "./sakila.db")
+	var err error
+	db, err = sql.Open("sqlite3", "./sakila.db")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
-	rows, err := db.Query("select title from film limit 5")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var title string
-		err = rows.Scan(&title)
-		if err != nil {
-			log.Fatal(err)
-		}
-		movies = append(movies, title)
-	}
-	err = rows.Err()
-	if err != nil {
-		log.Fatal(err)
-	}
+	// init nodes
+	filmTable := node.NewTable("film")
+	filmTable.Pos = rl.Vector2{60, 100}
+	nodes = append(nodes, filmTable)
 
+	filter := node.NewFilter([]string{"rating = 'PG'", "rental_rate < 3"})
+	filter.Pos = rl.Vector2{160, 100}
+	filter.Inputs = append(filter.Inputs, filmTable)
+	nodes = append(nodes, filter)
+
+	pick := node.NewPickColumns()
+	pick.Pos = rl.Vector2{260, 100}
+	pick.Data.(*node.PickColumns).Cols["title"] = true
+	pick.Inputs = append(pick.Inputs, filter)
+	nodes = append(nodes, pick)
+
+	// main frame loop
 	for !rl.WindowShouldClose() {
 		doFrame()
 	}
 }
 
-//var colors = []string{"Maroon", "Blue", "Green"}
-var colors = "Maroon;Blue;Green"
-var rlColors = []rl.Color{rl.Maroon, rl.Blue, rl.Green}
-var selectedColor = 0
-
-var ballLabel = "Ball"
-
-var textBoxActive = false
-var dropdownOpen = false
-
-var selectedMovie int
-var movieDropdownOpen = false
+var latestResult *queryResult
 
 func doFrame() {
 	rl.BeginDrawing()
 	defer rl.EndDrawing()
 
-	// ballPosition.X = gui.SliderBar(rl.Rectangle{600, 40, 120, 20}, ballPosition.X, 0, screenWidth)
-	// ballPosition.Y = gui.SliderBar(rl.Rectangle{600, 70, 120, 20}, ballPosition.Y, 0, screenHeight)
-
-	ballPosition := rl.GetMousePosition()
-
-	var toggleTextBox bool
-	if ballLabel, toggleTextBox = gui2.TextBox(rl.Rectangle{40, 40, 120, 20}, ballLabel, 100, textBoxActive); toggleTextBox {
-		textBoxActive = !textBoxActive
-	}
-
-	//selectedColor = gui.ComboBox(rl.Rectangle{40, 40, 120, 20}, colors, selectedColor)
-	selectedColor = gui2.ComboBox(rl.Rectangle{40, 70, 120, 20}, colors, selectedColor)
-	if gui2.DropdownBox(rl.Rectangle{40, 100, 120, 20}, colors, &selectedColor, dropdownOpen) {
-		dropdownOpen = !dropdownOpen
-	}
-	//ballLabel = gui.TextBox(rl.Rectangle{40, 70, 120, 20}, ballLabel)
-
 	rl.ClearBackground(rl.RayWhite)
-	rl.DrawCircleV(ballPosition, 50, rlColors[selectedColor])
-	rl.DrawText(ballLabel, int32(ballPosition.X), int32(ballPosition.Y), 14, rl.DarkGray)
 
-	if gui2.DropdownBox(rl.Rectangle{40, 140, 120, 20}, makeDropdownOptions(movies...), &selectedMovie, movieDropdownOpen) {
-		movieDropdownOpen = !movieDropdownOpen
+	for _, node := range nodes {
+		nodeRect := rl.Rectangle{node.Pos.X, node.Pos.Y, 80, 60}
+		rl.DrawRectangleLinesEx(nodeRect, 2, rl.Black)
+
+		isHover := rl.CheckCollisionPointRec(rl.GetMousePosition(), nodeRect)
+		isClick := isHover && rl.IsMouseButtonPressed(rl.MouseLeftButton) // TODO: better clicking (on release)
+		if isHover {
+			rl.DrawText(node.SQL(), int32(nodeRect.X), int32(nodeRect.Y)-20, 18, rl.Black)
+		}
+		if isClick {
+			latestResult = doQuery(node.SQL())
+		}
+	}
+
+	if latestResult != nil {
+		rowPos := rl.Vector2{60, 400}
+		for i := -1; i < len(latestResult.Rows); i++ {
+			if i < 0 {
+				// print headers
+				rl.DrawText(strings.Join(latestResult.Columns, "    "), int32(rowPos.X), int32(rowPos.Y), 18, rl.Black)
+			} else {
+				row := latestResult.Rows[i]
+				valStrings := make([]string, len(row))
+				for i, v := range row {
+					valStrings[i] = fmt.Sprintf("%v", v)
+				}
+				rl.DrawText(strings.Join(valStrings, "    "), int32(rowPos.X), int32(rowPos.Y), 18, rl.Black)
+			}
+
+			rowPos.Y += 20
+		}
 	}
 }
 
 func makeDropdownOptions(opts ...string) string {
 	return strings.Join(opts, ";")
+}
+
+// TODO: Surely this is pretty temporary. I just need to display boring query output.
+type queryResult struct {
+	Columns []string
+	Rows    [][]interface{}
+}
+
+func doQuery(q string) *queryResult {
+	rows, err := db.Query(q)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	var res queryResult
+
+	res.Columns, err = rows.Columns()
+	if err != nil {
+		panic(err)
+	}
+
+	for rows.Next() {
+		row := make([]interface{}, len(res.Columns))
+		rowPointers := make([]interface{}, len(row))
+		for i := range row {
+			rowPointers[i] = &row[i]
+		}
+
+		err = rows.Scan(rowPointers...)
+		if err != nil {
+			panic(err)
+		}
+		res.Rows = append(res.Rows, row)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		panic(err)
+	}
+
+	return &res
 }
