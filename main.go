@@ -67,7 +67,7 @@ func doFrame() {
 		isHover := rl.CheckCollisionPointRec(rl.GetMousePosition(), nodeRect)
 		isClick := isHover && rl.IsMouseButtonPressed(rl.MouseLeftButton) // TODO: better clicking (on release)
 		if isHover {
-			rl.DrawText(node.SQL(), int32(nodeRect.X), int32(nodeRect.Y)-20, 18, rl.Black)
+			rl.DrawText(node.SQL(), int32(nodeRect.X), int32(nodeRect.Y)-22, 20, rl.Black)
 		}
 		if isClick {
 			latestResult = doQuery(node.SQL())
@@ -79,17 +79,17 @@ func doFrame() {
 		for i := -1; i < len(latestResult.Rows); i++ {
 			if i < 0 {
 				// print headers
-				rl.DrawText(strings.Join(latestResult.Columns, "    "), int32(rowPos.X), int32(rowPos.Y), 18, rl.Black)
+				rl.DrawText(strings.Join(latestResult.Columns, "    "), int32(rowPos.X), int32(rowPos.Y), 20, rl.Black)
 			} else {
 				row := latestResult.Rows[i]
 				valStrings := make([]string, len(row))
 				for i, v := range row {
 					valStrings[i] = fmt.Sprintf("%v", v)
 				}
-				rl.DrawText(strings.Join(valStrings, "    "), int32(rowPos.X), int32(rowPos.Y), 18, rl.Black)
+				rl.DrawText(strings.Join(valStrings, "    "), int32(rowPos.X), int32(rowPos.Y), 20, rl.Black)
 			}
 
-			rowPos.Y += 20
+			rowPos.Y += 24
 		}
 	}
 }
