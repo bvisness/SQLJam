@@ -37,13 +37,13 @@ func main() {
 
 	filter := node.NewFilter([]string{"rating = 'PG'", "rental_rate < 3"})
 	filter.Pos = rl.Vector2{160, 100}
-	filter.Inputs = append(filter.Inputs, filmTable)
+	filter.Inputs[0] = filmTable
 	nodes = append(nodes, filter)
 
 	pick := node.NewPickColumns()
 	pick.Pos = rl.Vector2{260, 100}
 	pick.Data.(*node.PickColumns).Cols["title"] = true
-	pick.Inputs = append(pick.Inputs, filter)
+	pick.Inputs[0] = filter
 	nodes = append(nodes, pick)
 
 	// main frame loop
@@ -54,17 +54,50 @@ func main() {
 
 var latestResult *queryResult
 
+var cam = rl.Camera2D{
+	Offset: rl.Vector2{screenWidth / 2, screenHeight / 2},
+	Target: rl.Vector2{screenWidth / 2, screenHeight / 2},
+	Zoom:   1,
+}
+var panMouseStart rl.Vector2
+var panCamStart rl.Vector2
+
 func doFrame() {
 	rl.BeginDrawing()
 	defer rl.EndDrawing()
 
 	rl.ClearBackground(rl.RayWhite)
 
+	// Move camera
+	if rl.IsMouseButtonDown(rl.MouseMiddleButton) {
+		mousePos := rl.GetMousePosition()
+		if rl.IsMouseButtonPressed(rl.MouseMiddleButton) {
+			panMouseStart = mousePos
+			panCamStart = cam.Target
+		}
+
+		mouseDelta := rl.Vector2Subtract(mousePos, panMouseStart)
+		cam.Target = rl.Vector2Subtract(panCamStart, mouseDelta) // camera moves opposite of mouse
+	}
+
+	rl.BeginMode2D(cam)
+	defer rl.EndMode2D()
+
+	CheckCollisionPointRec2D := func(point rl.Vector2, rec rl.Rectangle) bool {
+		screenRec := rl.Rectangle{
+			X:      rec.X - (cam.Target.X - cam.Offset.X),
+			Y:      rec.Y - (cam.Target.Y - cam.Offset.Y),
+			Width:  rec.Width,
+			Height: rec.Height,
+		}
+		return rl.CheckCollisionPointRec(point, screenRec)
+	}
+
 	for _, node := range nodes {
 		nodeRect := rl.Rectangle{node.Pos.X, node.Pos.Y, 80, 60}
 		rl.DrawRectangleLinesEx(nodeRect, 2, rl.Black)
 
-		isHover := rl.CheckCollisionPointRec(rl.GetMousePosition(), nodeRect)
+		isHover := CheckCollisionPointRec2D(rl.GetMousePosition(), nodeRect)
 		isClick := isHover && rl.IsMouseButtonPressed(rl.MouseLeftButton) // TODO: better clicking (on release)
 		if isHover {
 			rl.DrawText(node.SQL(), int32(nodeRect.X), int32(nodeRect.Y)-22, 20, rl.Black)

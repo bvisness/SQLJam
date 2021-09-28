@@ -9,12 +9,12 @@ import (
 )
 
 type Node struct {
-	CanSnap bool // can snap to another node for its primary input
-	Data    NodeData
-	Inputs  []*Node
+	Data   NodeData
+	Inputs []*Node
 
 	// UI data
 	Pos     rl.Vector2
+	CanSnap bool // can snap to another node for its primary input
 	Snapped bool
 
 	// calculated fields
@@ -34,6 +34,7 @@ func NewTable(table string) *Node {
 func NewPickColumns() *Node {
 	return &Node{
 		CanSnap: true,
+		Inputs:  make([]*Node, 1),
 		Data: &PickColumns{
 			Cols: make(map[string]bool),
 		},
@@ -43,6 +44,7 @@ func NewPickColumns() *Node {
 func NewFilter(conditions []string) *Node {
 	return &Node{
 		CanSnap: true,
+		Inputs:  make([]*Node, 1),
 		Data: &Filter{
 			Conditions: conditions,
 		},
