@@ -37,9 +37,9 @@ func updateDrag() {
 	}
 }
 
-func tryStartDrag(key interface{}, objStart rl.Vector2) {
+func tryStartDrag(key interface{}, objStart rl.Vector2) bool {
 	if dragging {
-		return
+		return false
 	}
 
 	dragging = true
@@ -47,6 +47,8 @@ func tryStartDrag(key interface{}, objStart rl.Vector2) {
 	dragKey = getDragKey(key)
 	dragMouseStart = rl.GetMousePosition()
 	dragObjStart = objStart
+
+	return true
 }
 
 func dragOffset() rl.Vector2 {

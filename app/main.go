@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/bvisness/SQLJam/node"
@@ -44,6 +45,7 @@ func Main() {
 	pick.Pos = rl.Vector2{660, 100}
 	pick.Data.(*node.PickColumns).Cols = append(pick.Data.(*node.PickColumns).Cols, "title")
 	pick.Inputs[0] = filter
+	pick.Snapped = true
 	nodes = append(nodes, pick)
 
 	// main frame loop
@@ -101,6 +103,30 @@ func doFrame() {
 
 	rl.BeginMode2D(cam)
 	{
+		sort.SliceStable(nodes, func(i, j int) bool {
+			/*
+				A node should be less than another in the draw order if it
+				should be drawn first. Thus, a stacked node should be "less
+				than" its parent, but parents should be sorted according to
+				their Sort values, and stacked nodes along with them.
+			*/
+
+			a := nodes[i]
+			b := nodes[j]
+
+			// Check if a is a stacked child of b
+			if isSnappedUnder(a, b) {
+				return true
+			}
+
+			// They're not stacked, but find their parents and sort by that.
+			if snapRoot(a).Sort < snapRoot(b).Sort {
+				return true
+			}
+
+			return false
+		})
+
 		// draw lines
 		for _, n := range nodes {
 			if n.Snapped {
@@ -114,8 +140,14 @@ func doFrame() {
 		// draw nodes
 		for _, n := range nodes {
 			nodeRect := n.Rect()
-			rl.DrawRectangleRounded(nodeRect, 0.16, 6, n.Color)
-			//rl.DrawRectangleRoundedLines(nodeRect, 0.16, 6, 2, rl.Black)
+			bgRect := nodeRect
+			if n.Snapped {
+				const snappedOverlap = 20
+				bgRect.Y -= snappedOverlap
+				bgRect.Height += snappedOverlap
+			}
+			rl.DrawRectangleRounded(bgRect, 0.16, 6, n.Color)
+			//rl.DrawRectangleRoundedLines(bgRect, 0.16, 6, 2, rl.Black)
 
 			titleBarRect := rl.Rectangle{nodeRect.X, nodeRect.Y, nodeRect.Width - 24, 24}
 			previewRect := rl.Rectangle{nodeRect.X + nodeRect.Width - 24, nodeRect.Y, 24, 24}
@@ -138,7 +170,9 @@ func doFrame() {
 				drawBasicText(n.SQL(false), titleBarRect.X, titleBarRect.Y-22, 20, rl.Black)
 			}
 			if titleHover && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
-				tryStartDrag(n, n.Pos)
+				if tryStartDrag(n, n.Pos) {
+					n.Sort = nodeSortTop()
+				}
 			}
 
 			if draggingThis, done, canceled := dragState(n); draggingThis {
@@ -272,6 +306,24 @@ func doLayout() {
 		n.Size = rl.Vector2{float32(width), float32(height)}
 	}
 
+	// sort nodes to ensure processing order
+	sort.SliceStable(nodes, func(i, j int) bool {
+		/*
+			Here a node should be "less than" another if it should have its
+			layout computed first. So a parent node should be "less than"
+			its child.
+		*/
+
+		a := nodes[i]
+		b := nodes[j]
+
+		if isSnappedUnder(b, a) {
+			return true
+		}
+
+		return false
+	})
+
 	// unsnapped
 	for _, n := range nodes {
 		if !n.Snapped {
@@ -284,7 +336,7 @@ func doLayout() {
 		if n.Snapped {
 			basicLayout(n)
 			parent := n.Inputs[0]
-			n.Pos = rl.Vector2{parent.Pos.X, parent.Pos.Y + parent.Size.Y + 20}
+			n.Pos = rl.Vector2{parent.Pos.X, parent.Pos.Y + parent.Size.Y}
 		}
 	}
 
@@ -354,4 +406,41 @@ func trySnapNode(n *node.Node) {
 			break
 		}
 	}
+}
+
+var topSortValue = 0
+
+func nodeSortTop() int {
+	topSortValue++
+	return topSortValue
+}
+
+func snapRoot(n *node.Node) *node.Node {
+	root := n
+	for {
+		if root.Snapped && len(root.Inputs) > 0 {
+			root = root.Inputs[0]
+			continue
+		}
+		break
+	}
+
+	return root
+}
+
+func isSnappedUnder(a, b *node.Node) bool {
+	current := a
+	for current != nil {
+		if current == b {
+			return true
+		}
+
+		if current.Snapped && len(current.Inputs) > 0 {
+			current = current.Inputs[0]
+		} else {
+			break
+		}
+	}
+
+	return false
 }
