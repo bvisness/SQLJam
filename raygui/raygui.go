@@ -507,6 +507,131 @@ func Unlock() {
 	guiLocked = false
 }
 
+// Convert color data from RGB to HSV
+// NOTE: Color data should be passed normalized
+func ConvertRGBtoHSV(rgb rl.Vector3) rl.Vector3 {
+	var hsv rl.Vector3
+	var min float32 = 0
+	var max float32 = 0
+	var delta float32 = 0
+
+	min = rgb.X
+	if rgb.Y < min {
+		min = rgb.Y
+	}
+	if rgb.Z < min {
+		min = rgb.Z
+	}
+
+	max = rgb.X
+	if rgb.Y > max {
+		max = rgb.Y
+	}
+	if rgb.Z > max {
+		max = rgb.Z
+	}
+
+	hsv.Z = max // Value
+	delta = max - min
+
+	if delta < 0.00001 {
+		hsv.Y = 0
+		hsv.X = 0 // Undefined, maybe NAN?
+		return hsv
+	}
+
+	if max > 0 {
+		// NOTE: If max is 0, this divide would cause a crash
+		hsv.Y = (delta / max) // Saturation
+	} else {
+		// NOTE: If max is 0, then r = g = b = 0, s = 0, h is undefined
+		hsv.Y = 0
+		hsv.X = 0 // Undefined, maybe NAN?
+		return hsv
+	}
+
+	// NOTE: Comparing float values could not work properly
+	if rgb.X >= max {
+		hsv.X = (rgb.Y - rgb.Z) / delta // Between yellow & magenta
+	} else {
+		if rgb.Y >= max {
+			hsv.X = 2 + (rgb.Z-rgb.X)/delta // Between cyan & yellow
+		} else {
+			hsv.X = 4 + (rgb.X-rgb.Y)/delta // Between magenta & cyan
+		}
+	}
+
+	hsv.X *= 60 // Convert to degrees
+
+	if hsv.X < 0 {
+		hsv.X += 360
+	}
+
+	return hsv
+}
+
+// Convert color data from HSV to RGB
+// NOTE: Color data should be passed normalized
+func ConvertHSVtoRGB(hsv rl.Vector3) rl.Vector3 {
+	var rgb rl.Vector3
+	var hh float32 = 0
+	var p float32 = 0
+	var q float32 = 0
+	var t float32 = 0
+	var ff float32 = 0
+	var i int64 = 0
+
+	// NOTE: Comparing float values could not work properly
+	if hsv.Y <= 0 {
+		rgb.X = hsv.Z
+		rgb.Y = hsv.Z
+		rgb.Z = hsv.Z
+		return rgb
+	}
+
+	hh = hsv.X
+	if hh >= 360 {
+		hh = 0
+	}
+	hh /= 60
+
+	i = int64(hh)
+	ff = hh - float32(i)
+	p = hsv.Z * (1 - hsv.Y)
+	q = hsv.Z * (1 - (hsv.Y * ff))
+	t = hsv.Z * (1 - (hsv.Y * (1 - ff)))
+
+	switch i {
+	case 0:
+		rgb.X = hsv.Z
+		rgb.Y = t
+		rgb.Z = p
+	case 1:
+		rgb.X = q
+		rgb.Y = hsv.Z
+		rgb.Z = p
+	case 2:
+		rgb.X = p
+		rgb.Y = hsv.Z
+		rgb.Z = t
+	case 3:
+		rgb.X = p
+		rgb.Y = q
+		rgb.Z = hsv.Z
+	case 4:
+		rgb.X = t
+		rgb.Y = p
+		rgb.Z = hsv.Z
+	// case 5:
+	default:
+		rgb.X = hsv.Z
+		rgb.Y = p
+		rgb.Z = q
+	}
+
+	return rgb
+}
+
 // Set gui controls alpha global state
 func Fade(alpha float32) {
 	if alpha < 0 {
@@ -1644,6 +1769,253 @@ func ScrollBar(bounds rl.Rectangle, value, minValue, maxValue int) int {
 	//--------------------------------------------------------------------
 
 	return value
+}
+
+// List View control
+func ListView(bounds rl.Rectangle, text string, scrollIndex *int, active int) int {
+	itemCount := 0
+	var items []string
+
+	items = TextSplit(text, &itemCount, nil)
+
+	return ListViewEx(bounds, items, itemCount, nil, scrollIndex, active)
+}
+
+// List View control with extended parameters
+func ListViewEx(bounds rl.Rectangle, text []string, count int, focus *int, scrollIndex *int, active int) int {
+	state := guiState
+	itemFocused := -1
+	if focus != nil {
+		itemFocused = *focus
+	}
+	itemSelected := active
+
+	// Check if we need a scroll bar
+	useScrollBar := false
+	if float32(GetStyle(ListViewControl, ListItemsHeight)+GetStyle(ListViewControl, ListItemsPadding))*float32(count) > bounds.Height {
+		useScrollBar = true
+	}
+
+	// Define base item rectangle [0]
+	var itemBounds rl.Rectangle
+	itemBounds.X = bounds.X + float32(GetStyle(ListViewControl, ListItemsPadding))
+	itemBounds.Y = bounds.Y + float32(GetStyle(ListViewControl, ListItemsPadding)) + float32(GetStyle(Default, BorderWidthProp))
+	itemBounds.Width = bounds.Width - 2*float32(GetStyle(ListViewControl, ListItemsPadding)) - float32(GetStyle(Default, BorderWidthProp))
+	itemBounds.Height = float32(GetStyle(ListViewControl, ListItemsHeight))
+	if useScrollBar {
+		itemBounds.Width -= float32(GetStyle(ListViewControl, ScrollBarWidth))
+	}
+
+	// Get items on the list
+	visibleItems := int(bounds.Height) / int(GetStyle(ListViewControl, ListItemsHeight)+GetStyle(ListViewControl, ListItemsPadding))
+	if visibleItems > count {
+		visibleItems = count
+	}
+
+	startIndex := 0
+	if scrollIndex != nil {
+		startIndex = *scrollIndex
+	}
+	if (startIndex < 0) || (startIndex > (count - visibleItems)) {
+		startIndex = 0
+	}
+	endIndex := startIndex + visibleItems
+
+	// Update control
+	//--------------------------------------------------------------------
+	if (state != StateDisabled) && !guiLocked {
+		mousePoint := rl.GetMousePosition()
+
+		// Check mouse inside list view
+		if rl.CheckCollisionPointRec(mousePoint, bounds) {
+			state = StateFocused
+
+			// Check focused and selected item
+			for i := 0; i < visibleItems; i++ {
+				if rl.CheckCollisionPointRec(mousePoint, itemBounds) {
+					itemFocused = startIndex + i
+					if rl.IsMouseButtonPressed(rl.MouseLeftButton) {
+						if itemSelected == (startIndex + i) {
+							itemSelected = -1
+						} else {
+							itemSelected = startIndex + i
+						}
+					}
+					break
+				}
+
+				// Update item rectangle y position for next item
+				itemBounds.Y += float32((GetStyle(ListViewControl, ListItemsHeight) + GetStyle(ListViewControl, ListItemsPadding)))
+			}
+
+			if useScrollBar {
+				wheelMove := int(rl.GetMouseWheelMove())
+				startIndex -= wheelMove
+
+				if startIndex < 0 {
+					startIndex = 0
+				} else if startIndex > (count - visibleItems) {
+					startIndex = count - visibleItems
+				}
+
+				endIndex = startIndex + visibleItems
+				if endIndex > count {
+					endIndex = count
+				}
+			}
+		} else {
+			itemFocused = -1
+		}
+
+		// Reset item rectangle y to [0]
+		itemBounds.Y = bounds.Y + float32(GetStyle(ListViewControl, ListItemsPadding)) + float32(GetStyle(Default, BorderWidthProp))
+	}
+	//--------------------------------------------------------------------
+
+	// Draw control
+	//--------------------------------------------------------------------
+	DrawRectangle(bounds, int(GetStyle(Default, BorderWidthProp)), rl.Fade(rl.GetColor(int32(GetStyle(ListViewControl, Border+ControlProperty(state)*3))), guiAlpha), rl.GetColor(int32(GetStyle(Default, BackgroundColorProp)))) // Draw background
+
+	// Draw visible items
+	for i := 0; i < visibleItems; i++ {
+		if state == StateDisabled {
+			if (startIndex + i) == itemSelected {
+				DrawRectangle(itemBounds, int(GetStyle(ListViewControl, BorderWidthProp)), rl.Fade(rl.GetColor(int32(GetStyle(ListViewControl, BorderColorDisabledProp))), guiAlpha), rl.Fade(rl.GetColor(int32(GetStyle(ListViewControl, BaseColorDisabledProp))), guiAlpha))
+			}
+
+			DrawText(text[startIndex+i], GetTextBounds(Default, itemBounds), TextAlignment(GetStyle(ListViewControl, TextAlignmentProp)), rl.Fade(rl.GetColor(int32(GetStyle(ListViewControl, TextColorDisabledProp))), guiAlpha))
+		} else {
+			if (startIndex + i) == itemSelected {
+				// Draw item selected
+				DrawRectangle(itemBounds, int(GetStyle(ListViewControl, BorderWidthProp)), rl.Fade(rl.GetColor(int32(GetStyle(ListViewControl, BorderColorPressedProp))), guiAlpha), rl.Fade(rl.GetColor(int32(GetStyle(ListViewControl, BaseColorPressedProp))), guiAlpha))
+				DrawText(text[startIndex+i], GetTextBounds(Default, itemBounds), TextAlignment(GetStyle(ListViewControl, TextAlignmentProp)), rl.Fade(rl.GetColor(int32(GetStyle(ListViewControl, TextColorPressedProp))), guiAlpha))
+			} else if (startIndex + i) == itemFocused {
+				// Draw item focused
+				DrawRectangle(itemBounds, int(GetStyle(ListViewControl, BorderWidthProp)), rl.Fade(rl.GetColor(int32(GetStyle(ListViewControl, BorderColorFocusedProp))), guiAlpha), rl.Fade(rl.GetColor(int32(GetStyle(ListViewControl, BaseColorFocusedProp))), guiAlpha))
+				DrawText(text[startIndex+i], GetTextBounds(Default, itemBounds), TextAlignment(GetStyle(ListViewControl, TextAlignmentProp)), rl.Fade(rl.GetColor(int32(GetStyle(ListViewControl, TextColorFocusedProp))), guiAlpha))
+			} else {
+				// Draw item normal
+				DrawText(text[startIndex+i], GetTextBounds(Default, itemBounds), TextAlignment(GetStyle(ListViewControl, TextAlignmentProp)), rl.Fade(rl.GetColor(int32(GetStyle(ListViewControl, TextColorNormalProp))), guiAlpha))
+			}
+		}
+
+		// Update item rectangle y position for next item
+		itemBounds.Y += float32((GetStyle(ListViewControl, ListItemsHeight) + GetStyle(ListViewControl, ListItemsPadding)))
+	}
+
+	if useScrollBar {
+		scrollBarBounds := rl.Rectangle{
+			bounds.X + bounds.Width - float32(GetStyle(ListViewControl, BorderWidthProp)) - float32(GetStyle(ListViewControl, ScrollBarWidth)),
+			bounds.Y + float32(GetStyle(ListViewControl, BorderWidthProp)),
+			float32(GetStyle(ListViewControl, ScrollBarWidth)),
+			bounds.Height - 2*float32(GetStyle(Default, BorderWidthProp)),
+		}
+
+		// Calculate percentage of visible items and apply same percentage to scrollbar
+		percentVisible := float32(endIndex-startIndex) / float32(count)
+		sliderSize := bounds.Height * percentVisible
+
+		prevSliderSize := GetStyle(ScrollBarControl, ScrollSliderSize)    // Save default slider size
+		prevScrollSpeed := GetStyle(ScrollBarControl, ScrollSpeed)        // Save default scroll speed
+		SetStyle(ScrollBarControl, ScrollSliderSize, uint(sliderSize))    // Change slider size
+		SetStyle(ScrollBarControl, ScrollSpeed, uint(count-visibleItems)) // Change scroll speed
+
+		startIndex = ScrollBar(scrollBarBounds, startIndex, 0, count-visibleItems)
+
+		SetStyle(ScrollBarControl, ScrollSpeed, prevScrollSpeed)     // Reset scroll speed to default
+		SetStyle(ScrollBarControl, ScrollSliderSize, prevSliderSize) // Reset slider size to default
+	}
+	//--------------------------------------------------------------------
+
+	if focus != nil {
+		*focus = itemFocused
+	}
+	if scrollIndex != nil {
+		*scrollIndex = startIndex
+	}
+
+	return itemSelected
+}
+
+// Color Panel control
+func GuiColorPanelEx(bounds rl.Rectangle, color rl.Color, hue float32) rl.Color {
+	state := guiState
+	var pickerSelector rl.Vector2
+
+	vcolor := rl.Vector3{float32(color.R) / 255, float32(color.G) / 255, float32(color.B) / 255}
+	hsv := ConvertRGBtoHSV(vcolor)
+
+	pickerSelector.X = bounds.X + float32(hsv.Y)*bounds.Width      // HSV: Saturation
+	pickerSelector.Y = bounds.Y + (1-float32(hsv.Z))*bounds.Height // HSV: Value
+
+	x := hsv.X
+	if hue >= 0 {
+		x = hue
+	}
+	maxHue := rl.Vector3{x, 1, 1}
+	rgbHue := ConvertHSVtoRGB(maxHue)
+	maxHueCol := rl.Color{byte(255 * rgbHue.X),
+		byte(255 * rgbHue.Y),
+		byte(255 * rgbHue.Z), 255}
+
+	colWhite := rl.Color{255, 255, 255, 255}
+	colBlack := rl.Color{0, 0, 0, 255}
+
+	// Update control
+	//--------------------------------------------------------------------
+	if (state != StateDisabled) && !guiLocked {
+		mousePoint := rl.GetMousePosition()
+
+		if rl.CheckCollisionPointRec(mousePoint, bounds) {
+			if rl.IsMouseButtonDown(rl.MouseLeftButton) {
+				state = StatePressed
+				pickerSelector = mousePoint
+
+				// Calculate color from picker
+				colorPick := rl.Vector2{pickerSelector.X - bounds.X, pickerSelector.Y - bounds.Y}
+
+				colorPick.X /= bounds.Width  // Get normalized value on x
+				colorPick.Y /= bounds.Height // Get normalized value on y
+
+				hsv.Y = colorPick.X
+				hsv.Z = 1 - colorPick.Y
+
+				rgb := ConvertHSVtoRGB(hsv)
+
+				// NOTE: Vector3ToColor() only available on raylib 1.8.1
+				color = rl.Color{byte(255 * rgb.X),
+					byte(255 * rgb.Y),
+					byte(255 * rgb.Z),
+					byte(255 * float32(color.A) / 255)}
+
+			} else {
+				state = StateFocused
+			}
+		}
+	}
+	//--------------------------------------------------------------------
+
+	// Draw control
+	//--------------------------------------------------------------------
+	if state != StateDisabled {
+		rl.DrawRectangleGradientEx(bounds, rl.Fade(colWhite, guiAlpha), rl.Fade(colWhite, guiAlpha), rl.Fade(maxHueCol, guiAlpha), rl.Fade(maxHueCol, guiAlpha))
+		rl.DrawRectangleGradientEx(bounds, rl.Fade(colBlack, 0), rl.Fade(colBlack, guiAlpha), rl.Fade(colBlack, guiAlpha), rl.Fade(colBlack, 0))
+
+		// Draw color picker: selector
+		selector := rl.Rectangle{pickerSelector.X - float32(GetStyle(ColorPickerControl, ColorSelectorSize))/2, pickerSelector.Y - float32(GetStyle(ColorPickerControl, ColorSelectorSize))/2, float32(GetStyle(ColorPickerControl, ColorSelectorSize)), float32(GetStyle(ColorPickerControl, ColorSelectorSize))}
+		DrawRectangle(selector, 0, rl.Blank, rl.Fade(colWhite, guiAlpha))
+	} else {
+		rl.DrawRectangleGradientEx(bounds, rl.Fade(rl.Fade(rl.GetColor(int32(GetStyle(ColorPickerControl, BaseColorDisabledProp))), 0.1), guiAlpha), rl.Fade(rl.Fade(colBlack, 0.6), guiAlpha), rl.Fade(rl.Fade(colBlack, 0.6), guiAlpha), rl.Fade(rl.Fade(rl.GetColor(int32(GetStyle(ColorPickerControl, BorderColorDisabledProp))), 0.6), guiAlpha))
+	}
+
+	DrawRectangle(bounds, 1, rl.Fade(rl.GetColor(int32(GetStyle(ColorPickerControl, Border+ControlProperty(state)*3))), guiAlpha), rl.Blank)
+	//--------------------------------------------------------------------
+
+	return color
+}
+
+func ColorPanel(bounds rl.Rectangle, color rl.Color) rl.Color {
+	return GuiColorPanelEx(bounds, color, -1)
 }
 
 // Load style default over global style
