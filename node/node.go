@@ -3,7 +3,6 @@ package node
 import (
 	"fmt"
 	"reflect"
-	"sort"
 	"strings"
 
 	"github.com/bvisness/SQLJam/raygui"
@@ -18,17 +17,19 @@ type Node struct {
 	Pos     rl.Vector2
 	Size    rl.Vector2
 	Title   string
+	Color   rl.Color
 	CanSnap bool // can snap to another node for its primary input
 	Snapped bool
 	Sort    int
+
+	// Set in node update, affects layout
+	UISize rl.Vector2
 
 	// calculated fields
 	InputPinPos    []rl.Vector2
 	OutputPinPos   rl.Vector2
 	SnapTargetRect rl.Rectangle
 	UIRect         rl.Rectangle // roughly where the UI should fit
-
-	Color rl.Color
 }
 
 func NewTable(table string, alias string) *Node {
@@ -57,7 +58,7 @@ func NewPickColumns(alias string) *Node {
 	}
 }
 
-func NewFilter(conditions []string) *Node {
+func NewFilter(conditions string) *Node {
 	return &Node{
 		Title:   "Filter",
 		CanSnap: true,
@@ -137,7 +138,7 @@ func (ctx *NodeGenContext) RecursiveGenerate(n *Node) *NodeGenContext {
 			ctx.RecursiveGenerateAllChildren(n)
 		}
 	case *Filter:
-		ctx.FilterConditions = append(ctx.FilterConditions, d.Conditions...)
+		ctx.FilterConditions = append(ctx.FilterConditions, d.Conditions) // TODO: This should be split into multiple again? Right??
 		ctx.RecursiveGenerateAllChildren(n)
 	}
 	return ctx
@@ -166,9 +167,7 @@ func (n *Node) SQL(hasParent bool) string {
 		}
 		return ourQuery
 	case *PickColumns:
-		// TODO: Someday allow custom order of columns
 		var cols = d.Cols
-		sort.Strings(cols)
 		colsJoined := strings.Join(cols, ", ")
 
 		if len(n.Inputs) == 0 {
@@ -181,17 +180,13 @@ func (n *Node) SQL(hasParent bool) string {
 			panic("Pick Columns node had more than one input")
 		}
 	case *Filter:
-		wrappedConditions := make([]string, len(d.Conditions))
-		for i, cond := range d.Conditions {
-			wrappedConditions[i] = fmt.Sprintf("(%s)", cond)
-		}
-		joinedConditions := strings.Join(wrappedConditions, " AND ")
+		wrappedConditions := fmt.Sprintf("(%s)", d.Conditions)
 
 		if len(n.Inputs) == 0 {
 			// TODO: Return some kind of nice compile error
 			return "ERROR"
 		} else if len(n.Inputs) == 1 {
-			return fmt.Sprintf("SELECT * FROM (%s) WHERE %s", n.Inputs[0].SQL(true), joinedConditions)
+			return fmt.Sprintf("SELECT * FROM (%s) WHERE %s", n.Inputs[0].SQL(true), wrappedConditions)
 		} else {
 			panic("Pick Columns node had more than one input")
 		}

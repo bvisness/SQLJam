@@ -36,14 +36,14 @@ func Main() {
 	filmTable.Pos = rl.Vector2{60, 100}
 	nodes = append(nodes, filmTable)
 
-	filter := node.NewFilter([]string{"rating = 'PG'", "rental_rate < 3"})
+	filter := node.NewFilter("rating = 'PG' AND rental_rate < 3")
 	filter.Pos = rl.Vector2{360, 100}
 	filter.Inputs[0] = filmTable
 	nodes = append(nodes, filter)
 
 	pick := node.NewPickColumns("test_alias")
 	pick.Pos = rl.Vector2{660, 100}
-	pick.Data.(*node.PickColumns).Cols = append(pick.Data.(*node.PickColumns).Cols, "title")
+	pick.Data.(*node.PickColumns).Cols = append(pick.Data.(*node.PickColumns).Cols, "title", "description")
 	pick.Inputs[0] = filter
 	pick.Snapped = true
 	nodes = append(nodes, pick)
@@ -197,8 +197,10 @@ func doFrame() {
 
 		// display query results (temporary)
 		if latestResult != nil {
-			rowPos := rl.Vector2{60, 400}
-			for i := -1; i < len(latestResult.Rows); i++ {
+			const maxRows = 20
+
+			rowPos := rl.Vector2{60, 480}
+			for i := -1; i < len(latestResult.Rows) && i < maxRows; i++ {
 				if i < 0 {
 					// print headers
 					drawBasicText(strings.Join(latestResult.Columns, "    "), rowPos.X, rowPos.Y, 20, rl.Black)
@@ -213,6 +215,10 @@ func doFrame() {
 				}
 
 				rowPos.Y += 24
+			}
+
+			if len(latestResult.Rows) > maxRows {
+				drawBasicText(fmt.Sprintf("and %d more...", len(latestResult.Rows)-maxRows), rowPos.X, rowPos.Y, 20, rl.Black)
 			}
 		}
 	}
@@ -272,7 +278,8 @@ func doLayout() {
 	const snapRectHeight = 30
 
 	basicLayout := func(n *node.Node) {
-		width := 280 // TODO: Dynamic width based on specific contents
+		width := n.UISize.X + 2*uiPadding
+
 		inputHeight := titleBarHeight
 		outputHeight := titleBarHeight
 
@@ -301,7 +308,8 @@ func doLayout() {
 			height = outputHeight
 		}
 
-		height += uiPadding
+		// TODO: lol ignore the above
+		height = titleBarHeight + uiPadding + int(n.UISize.Y) + uiPadding
 
 		n.Size = rl.Vector2{float32(width), float32(height)}
 	}
@@ -345,18 +353,18 @@ func doLayout() {
 		maxWidth := n.Size.X
 
 		current := n
-		for current != nil {
+		for {
 			if current.Size.X > maxWidth {
 				maxWidth = current.Size.X
 			}
 			n.Size.X = maxWidth
 			current.Size.X = maxWidth
 
-			if len(current.Inputs) > 0 {
+			if current.Snapped && len(current.Inputs) > 0 {
 				current = current.Inputs[0]
-			} else {
-				current = nil
+				continue
 			}
+			break
 		}
 	}
 

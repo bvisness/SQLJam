@@ -34,6 +34,8 @@ type PickColumns struct {
 	SqlSource
 	Alias string
 	Cols  []string
+
+	ColDropdowns []raygui.DropdownEx
 }
 
 func (pc *PickColumns) SourceAlias() string {
@@ -63,8 +65,10 @@ type Join struct {
 
 type Filter struct {
 	NodeData
-	Conditions []string // TODO: whatever data we actually need for our filter UI
-	// for now it always does AND because I am testing
+	Conditions string // TODO: whatever data we actually need for our filter UI
+
+	// UI data
+	TextBox raygui.TextBoxEx
 }
 
 // A context for node generation recursion.

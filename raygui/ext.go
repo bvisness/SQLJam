@@ -59,3 +59,19 @@ func (d *DropdownEx) SetOptions(opts ...DropdownExOption) {
 	d.options = opts
 	d.str = strings.Join(names, ";")
 }
+
+type TextBoxEx struct {
+	active bool
+}
+
+func NewTextBoxEx() TextBoxEx {
+	return TextBoxEx{}
+}
+
+func (t *TextBoxEx) Do(bounds rl.Rectangle, text string, textSize int) string {
+	newText, toggle := TextBox(bounds, text, textSize, t.active)
+	if toggle {
+		t.active = !t.active
+	}
+	return newText
+}
