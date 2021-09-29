@@ -71,7 +71,9 @@ func NewOrder() *Node {
 		CanSnap: true,
 		Color:   rl.NewColor(255, 204, 128, 255),
 		Inputs:  make([]*Node, 1),
-		Data:    &Order{},
+		Data: &Order{
+			Cols: make([]OrderColumn, 1),
+		},
 	}
 }
 
@@ -79,7 +81,7 @@ func NewCombineRows(combineType CombineType) *Node {
 	return &Node{
 		Title:   "Combine Rows",
 		CanSnap: false,
-		Color: rl.NewColor(178, 223, 219, 255),
+		Color:   rl.NewColor(178, 223, 219, 255),
 		Inputs:  make([]*Node, 2),
 		Data: &CombineRows{
 			CombinationType: combineType,

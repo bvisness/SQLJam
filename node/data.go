@@ -56,7 +56,7 @@ const (
 type CombineRows struct {
 	NodeData
 	CombinationType CombineType
-	Dropdown raygui.DropdownEx
+	Dropdown        raygui.DropdownEx
 }
 
 type Join struct {
@@ -75,11 +75,15 @@ type Filter struct {
 type Order struct {
 	NodeData
 
-	Alias      string
-	Cols       []string
-	Descending bool
+	Alias string
+	Cols  []OrderColumn
 
 	ColDropdowns []raygui.DropdownEx
+}
+
+type OrderColumn struct {
+	Col        string
+	Descending bool
 }
 
 // A context for node generation recursion.
@@ -89,21 +93,28 @@ type Order struct {
 
 type GenCombine struct {
 	Context *NodeGenContext
-	Type CombineType
+	Type    CombineType
+}
+
+type GenOrder struct {
+	Col        string
+	Descending bool
 }
 
 type NodeGenContext struct {
 	SqlSource
-	Alias            string
-	Cols             []string
-	Source           SqlSource // or NodeGenContext
+	Alias  string
+	Cols   []string
+	Source SqlSource // or NodeGenContext
 
-	Combines         []GenCombine
+	Combines []GenCombine
 
-	Joins            []NodeGenContext
-	JoinConditions   []string
+	Joins          []NodeGenContext
+	JoinConditions []string
 
 	FilterConditions []string
+
+	Orders []GenOrder
 }
 
 func (ctx *NodeGenContext) SourceAlias() string {

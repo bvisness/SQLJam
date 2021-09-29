@@ -40,7 +40,6 @@ func doNodeUI(n *node.Node) {
 	}
 }
 
-
 func doTableUpdate(n *node.Node, t *node.Table) {
 	// init dropdown
 	if len(t.TableDropdown.GetOptions()) == 0 {
@@ -163,7 +162,7 @@ func doPickColumnsUI(n *node.Node, p *node.PickColumns) {
 		}
 	}
 
-	for i := range p.ColDropdowns {
+	for i := len(p.ColDropdowns) - 1; i >= 0; i-- {
 		fieldY -= UIFieldSpacing + UIFieldHeight
 		func() {
 			dropdown := &p.ColDropdowns[i]
@@ -178,14 +177,15 @@ func doPickColumnsUI(n *node.Node, p *node.PickColumns) {
 	}
 }
 
+const orderDirectionWidth = 70
+
 func doOrderUpdate(n *node.Node, o *node.Order) {
 	uiHeight := 0
 	for range o.Cols {
 		uiHeight += UIFieldHeight
 		uiHeight += UIFieldSpacing
 	}
-	uiHeight += UIFieldHeight                  // for buttons
-	uiHeight += UIFieldSpacing + UIFieldHeight // for ascending / descending
+	uiHeight += UIFieldHeight // for buttons
 
 	n.UISize = rl.Vector2{300, float32(uiHeight)}
 
@@ -212,27 +212,13 @@ func doOrderUI(n *node.Node, o *node.Order) {
 	// Render bottom to top to avoid overlap issues with dropdowns
 
 	fieldY := n.UIRect.Y + n.UIRect.Height - UIFieldHeight
-
-	activeSort := 0
-	if o.Descending {
-		activeSort = 1
-	}
-	newSort := raygui.ComboBox(rl.Rectangle{n.UIRect.X, fieldY, n.UIRect.Width, UIFieldHeight}, "A-Z;Z-A", activeSort)
-	switch newSort {
-	case 1:
-		o.Descending = true
-	default:
-		o.Descending = false
-	}
-
-	fieldY -= UIFieldHeight + UIFieldSpacing
 	if raygui.Button(rl.Rectangle{
 		n.UIRect.X,
 		fieldY,
 		n.UIRect.Width/2 - UIFieldSpacing/2,
 		UIFieldHeight,
 	}, "+") {
-		o.Cols = append(o.Cols, "")
+		o.Cols = append(o.Cols, node.OrderColumn{})
 		o.ColDropdowns = append(o.ColDropdowns, raygui.DropdownEx{})
 	}
 	if raygui.Button(rl.Rectangle{
@@ -247,17 +233,40 @@ func doOrderUI(n *node.Node, o *node.Order) {
 		}
 	}
 
-	for i := range o.ColDropdowns {
+	for i := len(o.ColDropdowns) - 1; i >= 0; i-- {
 		fieldY -= UIFieldSpacing + UIFieldHeight
 		func() {
+			col := &o.Cols[i]
 			dropdown := &o.ColDropdowns[i]
 			if openDropdown == dropdown {
 				raygui.Enable()
 				defer raygui.Disable()
 			}
 
-			col := dropdown.Do(rl.Rectangle{n.UIRect.X, fieldY, n.UIRect.Width, UIFieldHeight})
-			o.Cols[i], _ = col.(string)
+			colName := dropdown.Do(rl.Rectangle{
+				n.UIRect.X,
+				fieldY,
+				n.UIRect.Width - orderDirectionWidth - UIFieldSpacing,
+				UIFieldHeight,
+			})
+			col.Col, _ = colName.(string)
+
+			activeSort := 0
+			if col.Descending {
+				activeSort = 1
+			}
+			newSort := raygui.ComboBox(rl.Rectangle{
+				n.UIRect.X + n.UIRect.Width - orderDirectionWidth,
+				fieldY,
+				orderDirectionWidth,
+				UIFieldHeight,
+			}, "A-Z;Z-A", activeSort)
+			switch newSort {
+			case 1:
+				col.Descending = true
+			default:
+				col.Descending = false
+			}
 		}()
 	}
 }
@@ -274,8 +283,6 @@ var combineRowsOpts = []raygui.DropdownExOption{
 	{"EXCEPT", node.Except},
 	{"EXCEPT ALL", node.ExceptAll},
 }
-
-
 
 func doCombineRowsUI(n *node.Node, d *node.CombineRows) {
 	n.UISize = rl.Vector2{X: 200, Y: float32(48)}

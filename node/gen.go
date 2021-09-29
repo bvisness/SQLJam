@@ -70,6 +70,19 @@ func (ctx *NodeGenContext) SourceToSql() string {
 		}
 	}
 
+	if len(ctx.Orders) > 0 {
+		sql += " ORDER BY "
+		var orderStrings []string
+		for _, order := range ctx.Orders {
+			direction := ""
+			if order.Descending {
+				direction = " DESC"
+			}
+			orderStrings = append(orderStrings, fmt.Sprintf("%s%s", order.Col, direction))
+		}
+		sql += strings.Join(orderStrings, ", ")
+	}
+
 	return sql
 }
 
@@ -92,6 +105,14 @@ func (ctx *NodeGenContext) RecursiveGenerate(n *Node) *NodeGenContext {
 		}
 	case *Filter:
 		ctx.FilterConditions = append(ctx.FilterConditions, d.Conditions) // TODO: This should be split into multiple again? Right??
+		ctx.RecursiveGenerateChildren(n)
+	case *Order:
+		for _, col := range d.Cols {
+			ctx.Orders = append(ctx.Orders, GenOrder{
+				Col:        col.Col,
+				Descending: col.Descending,
+			})
+		}
 		ctx.RecursiveGenerateChildren(n)
 	case *CombineRows:
 		numNotNull := 0
@@ -117,7 +138,6 @@ func (ctx *NodeGenContext) RecursiveGenerate(n *Node) *NodeGenContext {
 				}
 			}
 		}
-
 	}
 	return ctx
 }
