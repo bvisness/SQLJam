@@ -152,6 +152,10 @@ func (ctx *NodeGenContext) RecursiveGenerateAllChildren(n *Node) *NodeGenContext
 }
 
 func (n *Node) SQL(hasParent bool) string {
+	if n == nil {
+		return ""
+	}
+
 	// TODO: Optimizations :P
 
 	switch d := n.Data.(type) {

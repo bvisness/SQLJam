@@ -38,14 +38,14 @@ func Main() {
 
 	filter := node.NewFilter("rating = 'PG' AND rental_rate < 3")
 	filter.Pos = rl.Vector2{360, 100}
-	filter.Inputs[0] = filmTable
+	// filter.Inputs[0] = filmTable
 	nodes = append(nodes, filter)
 
 	pick := node.NewPickColumns("test_alias")
 	pick.Pos = rl.Vector2{660, 100}
 	pick.Data.(*node.PickColumns).Cols = append(pick.Data.(*node.PickColumns).Cols, "title", "description")
-	pick.Inputs[0] = filter
-	pick.Snapped = true
+	// pick.Inputs[0] = filter
+	// pick.Snapped = true
 	nodes = append(nodes, pick)
 
 	// main frame loop
@@ -133,8 +133,20 @@ func doFrame() {
 				continue
 			}
 			for i, input := range n.Inputs {
+				if input == nil {
+					continue
+				}
 				rl.DrawLineBezier(input.OutputPinPos, n.InputPinPos[i], 2, rl.Black)
 			}
+		}
+
+		if draggingWire() {
+			rl.DrawLineBezier(wireDragOutputNode.OutputPinPos, rl.GetMousePosition(), 2, rl.Black)
+		}
+
+		const pinRadius = 6
+		getPinRect := func(pos rl.Vector2) rl.Rectangle {
+			return rl.Rectangle{pos.X - pinRadius/2, pos.Y - pinRadius/2, pinRadius * 2, pinRadius * 2}
 		}
 
 		// draw nodes
@@ -159,10 +171,24 @@ func doFrame() {
 				if n.Snapped && i == 0 {
 					continue
 				}
-				rl.DrawCircle(int32(pinPos.X), int32(pinPos.Y), 6, rl.Black)
+
+				rl.DrawCircle(int32(pinPos.X), int32(pinPos.Y), pinRadius, rl.Black)
+				isHoverPin := CheckCollisionPointRec2D(rl.GetMousePosition(), getPinRect(pinPos))
+
+				if isHoverPin {
+					if source, ok := didDropWire(); ok {
+						n.Inputs[i] = source
+					} else if rl.IsMouseButtonPressed(rl.MouseLeftButton) && n.Inputs[i] != nil {
+						tryDragNewWire(n.Inputs[i])
+						n.Inputs[i] = nil
+					}
+				}
 			}
 			if !n.Snapped {
 				rl.DrawCircle(int32(n.OutputPinPos.X), int32(n.OutputPinPos.Y), 6, rl.Black)
+				if CheckCollisionPointRec2D(rl.GetMousePosition(), getPinRect(n.OutputPinPos)) && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
+					tryDragNewWire(n)
+				}
 			}
 
 			titleHover := CheckCollisionPointRec2D(rl.GetMousePosition(), titleBarRect)

@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 
+	"github.com/bvisness/SQLJam/node"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
@@ -77,4 +78,36 @@ func dragState(key interface{}) (matchesKey bool, done bool, canceled bool) {
 	} else {
 		return matchesKey, false, false
 	}
+}
+
+// Specific stuff for wire dragging
+
+const wireDragKey = "NEW_WIRE"
+
+var wireDragOutputNode *node.Node
+
+func tryDragNewWire(outputNode *node.Node) {
+	if outputNode == nil {
+		return
+	}
+	if tryStartDrag(wireDragKey, rl.Vector2{}) {
+		wireDragOutputNode = outputNode
+	}
+}
+
+func draggingWire() bool {
+	return dragging && dragKey == wireDragKey
+}
+
+func didDropWire() (*node.Node, bool) {
+	matchesKey, done, canceled := dragState(wireDragKey)
+	if !matchesKey {
+		return nil, false
+	}
+
+	if done && !canceled {
+		return wireDragOutputNode, true
+	}
+
+	return nil, false
 }
