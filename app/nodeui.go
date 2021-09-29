@@ -17,6 +17,8 @@ func doNodeUpdate(n *node.Node) {
 		doFilterUpdate(n, d)
 	case *node.PickColumns:
 		doPickColumnsUpdate(n, d)
+	case *node.CombineRows:
+		doCombineRowsUpdate(n, d)
 	}
 }
 
@@ -29,8 +31,11 @@ func doNodeUI(n *node.Node) {
 		doFilterUI(n, d)
 	case *node.PickColumns:
 		doPickColumnsUI(n, d)
+	case *node.CombineRows:
+		doCombineRowsUI(n, d)
 	}
 }
+
 
 func doTableUpdate(n *node.Node, t *node.Table) {
 	// init dropdown
@@ -167,6 +172,27 @@ func doPickColumnsUI(n *node.Node, p *node.PickColumns) {
 			p.Cols[i], _ = col.(string)
 		}()
 	}
+}
+
+func doCombineRowsUpdate(n *node.Node, c *node.CombineRows) {
+	c.Dropdown.SetOptions(combineRowsOpts...)
+}
+
+var combineRowsOpts = []raygui.DropdownExOption{
+	{"UNION", node.Union},
+	{"UNION ALL", node.UnionAll},
+	{"INTERSECT", node.Intersect},
+	{"INTERSECT ALL", node.IntersectAll},
+	{"EXCEPT", node.Except},
+	{"EXCEPT ALL", node.ExceptAll},
+}
+
+
+
+func doCombineRowsUI(n *node.Node, d *node.CombineRows) {
+	n.UISize = rl.Vector2{X: 200, Y: float32(48)}
+	chosen := d.Dropdown.Do(n.UIRect)
+	d.CombinationType = chosen.(node.CombineType)
 }
 
 func getSchema(n *node.Node) ([]string, error) {

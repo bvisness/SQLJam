@@ -56,6 +56,7 @@ const (
 type CombineRows struct {
 	NodeData
 	CombinationType CombineType
+	Dropdown raygui.DropdownEx
 }
 
 type Join struct {
@@ -86,14 +87,22 @@ type Order struct {
 // we continue recursive generation with a new Source context object.
 // Thus this is basically a recursive tree
 
+type GenCombine struct {
+	Context *NodeGenContext
+	Type CombineType
+}
+
 type NodeGenContext struct {
 	SqlSource
 	Alias            string
 	Cols             []string
 	Source           SqlSource // or NodeGenContext
-	Combines         []NodeGenContext
+
+	Combines         []GenCombine
+
 	Joins            []NodeGenContext
 	JoinConditions   []string
+
 	FilterConditions []string
 }
 

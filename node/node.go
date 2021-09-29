@@ -2,7 +2,6 @@ package node
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/bvisness/SQLJam/raygui"
@@ -70,98 +69,15 @@ func NewCombineRows(combineType CombineType) *Node {
 	return &Node{
 		Title:   "Combine Rows",
 		CanSnap: false,
-		Inputs:  make([]*Node, 1),
+		Color: rl.NewColor(178, 223, 219, 255),
+		Inputs:  make([]*Node, 2),
 		Data: &CombineRows{
 			CombinationType: combineType,
 		},
 	}
 }
 
-func NewNodeGenContext() *NodeGenContext {
-	return &NodeGenContext{}
-}
-
-func NewRecursiveGenerated(n *Node) *NodeGenContext {
-	return NewNodeGenContext().RecursiveGenerate(n)
-}
-
-// SourceToSql Turns a context tree into an SQL statement string
-func (ctx *NodeGenContext) SourceToSql() string {
-	sql := "SELECT "
-
-	if len(ctx.Cols) == 0 {
-		sql += "*"
-	} else {
-		sql += strings.Join(ctx.Cols, ", ")
-	}
-
-	if ctx.Source == nil {
-		return "Error: No SQL Source"
-	} else {
-		fmt.Println(fmt.Sprintf("child element: %s ||| %s", reflect.TypeOf(ctx.Source), ctx.Source.SourceToSql()))
-		fmt.Println(fmt.Sprintf("it's alias is: %s ### %s", ctx.Source.SourceAlias(), ctx.Alias))
-		fmt.Println(fmt.Sprintf("Doot %s", reflect.TypeOf(ctx.Source)))
-		switch ctx.Source.(type) {
-		case *Table:
-			sql += fmt.Sprintf(" FROM %s", ctx.Source.SourceToSql())
-		default:
-			sql += fmt.Sprintf(" FROM (%s)", ctx.Source.SourceToSql())
-		}
-
-		// Currently only shows alias if it's not empty
-		if ctx.Source.SourceAlias() != "" {
-			sql += fmt.Sprintf(" AS %s", ctx.Alias)
-		}
-	}
-
-	if len(ctx.FilterConditions) > 0 && ctx.FilterConditions[0] != "" {
-		sql += " WHERE "
-		sql += strings.Join(ctx.FilterConditions, " AND ")
-	}
-
-	// handle combining here
-
-	return sql
-}
-
-// RecursiveGenerate Turns a node into a recursive context tree for SQL generation
-func (ctx *NodeGenContext) RecursiveGenerate(n *Node) *NodeGenContext {
-	fmt.Println(fmt.Sprintf("test1 %s", n))
-	fmt.Println(fmt.Sprintf("test2 %s", reflect.TypeOf(n)))
-	switch d := n.Data.(type) {
-	case *Table:
-		ctx.Source = d
-		ctx.Alias = d.Alias
-		ctx.RecursiveGenerateAllChildren(n)
-	case *PickColumns:
-		if len(ctx.Cols) > 0 {
-			ctx.Source = NewRecursiveGenerated(n)
-			ctx.Alias = d.Alias
-		} else {
-			ctx.Cols = d.Cols
-			ctx.RecursiveGenerateAllChildren(n)
-		}
-	case *Filter:
-		ctx.FilterConditions = append(ctx.FilterConditions, d.Conditions) // TODO: This should be split into multiple again? Right??
-		ctx.RecursiveGenerateAllChildren(n)
-	}
-	return ctx
-}
-
-func (ctx *NodeGenContext) RecursiveGenerateAllChildren(n *Node) *NodeGenContext {
-	for _, value := range n.Inputs {
-		if value != nil {
-			ctx.RecursiveGenerate(value)
-		}
-	}
-	return ctx
-}
-
-func (n *Node) GenerateSql() string {
-	return NewRecursiveGenerated(n).SourceToSql()
-}
-
-func (n *Node) SQL(hasParent bool) string {
+func (n *Node) OldSqlGen(hasParent bool) string {
 	if n == nil {
 		return ""
 	}
@@ -189,7 +105,7 @@ func (n *Node) SQL(hasParent bool) string {
 			return "ERROR"
 		} else if len(n.Inputs) == 1 {
 
-			return fmt.Sprintf("SELECT %s FROM (%s)", colsJoined, n.Inputs[0].SQL(true))
+			return fmt.Sprintf("SELECT %s FROM (%s)", colsJoined, n.Inputs[0].OldSqlGen(true))
 		} else {
 			panic("Pick Columns node had more than one input")
 		}
@@ -200,7 +116,7 @@ func (n *Node) SQL(hasParent bool) string {
 			// TODO: Return some kind of nice compile error
 			return "ERROR"
 		} else if len(n.Inputs) == 1 {
-			return fmt.Sprintf("SELECT * FROM (%s) WHERE %s", n.Inputs[0].SQL(true), wrappedConditions)
+			return fmt.Sprintf("SELECT * FROM (%s) WHERE %s", n.Inputs[0].OldSqlGen(true), wrappedConditions)
 		} else {
 			panic("Pick Columns node had more than one input")
 		}

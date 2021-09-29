@@ -27,7 +27,7 @@ func main() {
 	nodes = append(nodes, pick2)
 
 	// Recursive generate the context tree
-	ctxTree := node.NewRecursiveGenerated(pick2)
+	ctxTree := node.NewRecursiveContext(pick2)
 	// Turn it into SQL
 	//fmt.Println(fmt.Sprintf("Pick2 SRC: %s", ctxTree.Source))
 	fmt.Println(ctxTree.SourceToSql())
