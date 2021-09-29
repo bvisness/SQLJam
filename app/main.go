@@ -150,7 +150,8 @@ func doFrame() {
 				bgRect.Y -= snappedOverlap
 				bgRect.Height += snappedOverlap
 			}
-			rl.DrawRectangleRounded(bgRect, 0.16, 6, n.Color)
+
+			rl.DrawRectangleRounded(bgRect, RoundnessPx(bgRect, 10), 6, n.Color)
 			//rl.DrawRectangleRoundedLines(bgRect, 0.16, 6, 2, rl.Black)
 
 			titleBarRect := rl.Rectangle{nodeRect.X, nodeRect.Y, nodeRect.Width - 24, 24}
@@ -329,6 +330,17 @@ func CheckCollisionPointRec2D(point rl.Vector2, rec rl.Rectangle) bool {
 		Height: rec.Height,
 	}
 	return rl.CheckCollisionPointRec(point, screenRec)
+}
+
+func RoundnessPx(rect rl.Rectangle, radiusPx float32) float32 {
+	minDimension := rect.Width
+	if rect.Height < minDimension {
+		minDimension = rect.Height
+	}
+	if minDimension == 0 {
+		return 0
+	}
+	return radiusPx / minDimension
 }
 
 func doLayout() {
