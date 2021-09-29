@@ -190,7 +190,7 @@ func doFrame() {
 
 			titleHover := CheckCollisionPointRec2D(rl.GetMousePosition(), titleBarRect)
 			if titleHover {
-				drawBasicText(n.SQL(false), titleBarRect.X, titleBarRect.Y-22, 20, rl.Black)
+				drawBasicText(n.GenerateSql(), titleBarRect.X, titleBarRect.Y-22, 20, rl.Black)
 			}
 			if titleHover && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
 				if tryStartDrag(n, n.Pos) {
@@ -212,7 +212,7 @@ func doFrame() {
 
 			previewHover := CheckCollisionPointRec2D(rl.GetMousePosition(), previewRect)
 			if previewHover && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
-				latestResult = doQuery(n.SQL(false))
+				latestResult = doQuery(n.GenerateSql())
 			}
 
 			doNodeUI(n)

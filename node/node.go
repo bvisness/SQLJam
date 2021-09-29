@@ -96,11 +96,17 @@ func (ctx *NodeGenContext) SourceToSql() string {
 	}
 
 	if ctx.Source == nil {
-		panic("We can't generate SQL if our gen context has no source!")
+		return "Error: No SQL Source"
 	} else {
 		fmt.Println(fmt.Sprintf("child element: %s ||| %s", reflect.TypeOf(ctx.Source), ctx.Source.SourceToSql()))
 		fmt.Println(fmt.Sprintf("it's alias is: %s ### %s", ctx.Source.SourceAlias(), ctx.Alias))
-		sql += fmt.Sprintf(" FROM (%s)", ctx.Source.SourceToSql())
+		fmt.Println(fmt.Sprintf("Doot %s", reflect.TypeOf(ctx.Source)))
+		switch ctx.Source.(type) {
+		case *Table:
+			sql += fmt.Sprintf(" FROM %s", ctx.Source.SourceToSql())
+		default:
+			sql += fmt.Sprintf(" FROM (%s)", ctx.Source.SourceToSql())
+		}
 
 		// Currently only shows alias if it's not empty
 		if ctx.Source.SourceAlias() != "" {
@@ -108,7 +114,7 @@ func (ctx *NodeGenContext) SourceToSql() string {
 		}
 	}
 
-	if len(ctx.FilterConditions) > 0 {
+	if len(ctx.FilterConditions) > 0 && ctx.FilterConditions[0] != "" {
 		sql += " WHERE "
 		sql += strings.Join(ctx.FilterConditions, " AND ")
 	}
@@ -120,6 +126,8 @@ func (ctx *NodeGenContext) SourceToSql() string {
 
 // RecursiveGenerate Turns a node into a recursive context tree for SQL generation
 func (ctx *NodeGenContext) RecursiveGenerate(n *Node) *NodeGenContext {
+	fmt.Println(fmt.Sprintf("test1 %s", n))
+	fmt.Println(fmt.Sprintf("test2 %s", reflect.TypeOf(n)))
 	switch d := n.Data.(type) {
 	case *Table:
 		ctx.Source = d
@@ -142,9 +150,15 @@ func (ctx *NodeGenContext) RecursiveGenerate(n *Node) *NodeGenContext {
 
 func (ctx *NodeGenContext) RecursiveGenerateAllChildren(n *Node) *NodeGenContext {
 	for _, value := range n.Inputs {
-		ctx.RecursiveGenerate(value)
+		if value != nil {
+			ctx.RecursiveGenerate(value)
+		}
 	}
 	return ctx
+}
+
+func (n *Node) GenerateSql() string {
+	return NewRecursiveGenerated(n).SourceToSql()
 }
 
 func (n *Node) SQL(hasParent bool) string {

@@ -72,7 +72,9 @@ type Filter struct {
 }
 
 // A context for node generation recursion.
-// At certain times, we will need to push
+// Eventually, we can no longer add onto this query. Thus,
+// we continue recursive generation with a new Source context object.
+// Thus this is basically a recursive tree
 
 type NodeGenContext struct {
 	SqlSource

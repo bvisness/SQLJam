@@ -189,7 +189,7 @@ func doPickColumnsUI(n *node.Node, p *node.PickColumns) {
 }
 
 func getSchema(n *node.Node) ([]string, error) {
-	rows, err := db.Query(n.SQL(false) + " LIMIT 0") // TODO: The limit should be part of SQL generation, yeah?
+	rows, err := db.Query(n.GenerateSql() + " LIMIT 0") // TODO: The limit should be part of SQL generation, yeah?
 	if err != nil {
 		return nil, err
 	}
