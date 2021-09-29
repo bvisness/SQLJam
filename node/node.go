@@ -28,45 +28,41 @@ type Node struct {
 	// calculated fields
 	InputPinPos    []rl.Vector2
 	OutputPinPos   rl.Vector2
+	HasChildren    bool
 	SnapTargetRect rl.Rectangle
 	UIRect         rl.Rectangle // roughly where the UI should fit
 }
 
-func NewTable(table string, alias string) *Node {
+func NewTable() *Node {
 	return &Node{
 		Title:   "Table",
 		CanSnap: false,
 		Color:   rl.NewColor(242, 201, 76, 255),
 		Data: &Table{
-			Table: table,
-			Alias: alias,
-
 			TableDropdown: raygui.NewDropdownEx(),
 		},
 	}
 }
 
-func NewPickColumns(alias string) *Node {
+func NewPickColumns() *Node {
 	return &Node{
 		Title:   "Pick Columns",
 		CanSnap: true,
 		Color:   rl.NewColor(244, 143, 177, 255),
 		Inputs:  make([]*Node, 1),
 		Data: &PickColumns{
-			Alias: alias,
+			Cols: make([]string, 1),
 		},
 	}
 }
 
-func NewFilter(conditions string) *Node {
+func NewFilter() *Node {
 	return &Node{
 		Title:   "Filter",
 		CanSnap: true,
 		Color:   rl.NewColor(111, 207, 151, 255),
 		Inputs:  make([]*Node, 1),
-		Data: &Filter{
-			Conditions: conditions,
-		},
+		Data:    &Filter{},
 	}
 }
 

@@ -143,11 +143,21 @@ func doPickColumnsUpdate(n *node.Node, p *node.PickColumns) {
 }
 
 func doPickColumnsUI(n *node.Node, p *node.PickColumns) {
+	// TODO: Could we, like, do a closure or something
+	var deferredDropdown *raygui.DropdownEx
+	var deferredDropdownI int
+	var deferredDropdownY float32
+
 	fieldY := n.UIRect.Y
 	for i := range p.ColDropdowns {
 		dropdown := &p.ColDropdowns[i]
-		col := dropdown.Do(rl.Rectangle{n.UIRect.X, fieldY, n.UIRect.Width, pickColumnsFieldHeight})
-		p.Cols[i], _ = col.(string)
+		if dropdown.Open && deferredDropdown == nil {
+			deferredDropdown = dropdown
+			deferredDropdownY = fieldY
+		} else {
+			col := dropdown.Do(rl.Rectangle{n.UIRect.X, fieldY, n.UIRect.Width, pickColumnsFieldHeight})
+			p.Cols[i], _ = col.(string)
+		}
 		fieldY += pickColumnsFieldHeight + pickColumnsFieldSpacing
 	}
 
@@ -170,6 +180,11 @@ func doPickColumnsUI(n *node.Node, p *node.PickColumns) {
 			p.Cols = p.Cols[:len(p.Cols)-1]
 			p.ColDropdowns = p.ColDropdowns[:len(p.ColDropdowns)-1]
 		}
+	}
+
+	if deferredDropdown != nil {
+		col := deferredDropdown.Do(rl.Rectangle{n.UIRect.X, deferredDropdownY, n.UIRect.Width, pickColumnsFieldHeight})
+		p.Cols[deferredDropdownI], _ = col.(string)
 	}
 }
 

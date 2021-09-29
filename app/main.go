@@ -31,23 +31,6 @@ func Main() {
 	close := openDB()
 	defer close()
 
-	// init nodes
-	filmTable := node.NewTable("film", "cool_films")
-	filmTable.Pos = rl.Vector2{60, 100}
-	nodes = append(nodes, filmTable)
-
-	filter := node.NewFilter("rating = 'PG' AND rental_rate < 3")
-	filter.Pos = rl.Vector2{360, 100}
-	// filter.Inputs[0] = filmTable
-	nodes = append(nodes, filter)
-
-	pick := node.NewPickColumns("test_alias")
-	pick.Pos = rl.Vector2{660, 100}
-	pick.Data.(*node.PickColumns).Cols = append(pick.Data.(*node.PickColumns).Cols, "title", "description")
-	// pick.Inputs[0] = filter
-	// pick.Snapped = true
-	nodes = append(nodes, pick)
-
 	// main frame loop
 	rl.SetExitKey(0)
 	for !rl.WindowShouldClose() {
@@ -122,6 +105,8 @@ func doFrame() {
 			return false
 		})
 
+		displayLastResults()
+
 		// draw lines
 		for _, n := range nodes {
 			if n.Snapped {
@@ -139,9 +124,21 @@ func doFrame() {
 			rl.DrawLineBezier(wireDragOutputNode.OutputPinPos, rl.GetMousePosition(), 2, rl.Black)
 		}
 
-		const pinRadius = 6
-		getPinRect := func(pos rl.Vector2) rl.Rectangle {
-			return rl.Rectangle{pos.X - pinRadius/2, pos.Y - pinRadius/2, pinRadius * 2, pinRadius * 2}
+		const pinSize = 12
+		getPinRect := func(pos rl.Vector2, right bool) rl.Rectangle {
+			var x float32
+			if right {
+				x = pos.X
+			} else {
+				x = pos.X - pinSize
+			}
+
+			return rl.Rectangle{
+				x,
+				pos.Y - pinSize/2,
+				pinSize,
+				pinSize,
+			}
 		}
 
 		// draw nodes
@@ -167,8 +164,13 @@ func doFrame() {
 					continue
 				}
 
-				rl.DrawCircle(int32(pinPos.X), int32(pinPos.Y), pinRadius, rl.Black)
-				isHoverPin := CheckCollisionPointRec2D(rl.GetMousePosition(), getPinRect(pinPos))
+				isHoverPin := CheckCollisionPointRec2D(rl.GetMousePosition(), getPinRect(pinPos, false))
+
+				pinColor := rl.Black
+				if isHoverPin {
+					pinColor = rl.Blue
+				}
+				rl.DrawRectangleRec(getPinRect(pinPos, false), pinColor)
 
 				if isHoverPin {
 					if source, ok := didDropWire(); ok {
@@ -179,9 +181,9 @@ func doFrame() {
 					}
 				}
 			}
-			if !n.Snapped {
-				rl.DrawCircle(int32(n.OutputPinPos.X), int32(n.OutputPinPos.Y), 6, rl.Black)
-				if CheckCollisionPointRec2D(rl.GetMousePosition(), getPinRect(n.OutputPinPos)) && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
+			if !n.HasChildren {
+				rl.DrawRectangleRec(getPinRect(n.OutputPinPos, true), rl.Black)
+				if CheckCollisionPointRec2D(rl.GetMousePosition(), getPinRect(n.OutputPinPos, true)) && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
 					tryDragNewWire(n)
 				}
 			}
@@ -215,54 +217,6 @@ func doFrame() {
 
 			doNodeUI(n)
 		}
-
-		// display query results (temporary)
-		if latestResult != nil {
-			const maxRows = 20
-
-			var rows [][]string
-			for i := -1; i < len(latestResult.Rows) && i < maxRows; i++ {
-				if i < 0 {
-					// headers
-					rows = append(rows, latestResult.Columns)
-				} else {
-					row := latestResult.Rows[i]
-					valStrings := make([]string, len(row))
-					for i, v := range row {
-						valStrings[i] = fmt.Sprintf("%v", v)
-					}
-					rows = append(rows, valStrings)
-				}
-			}
-
-			colWidths := make([]int, len(rows[0]))
-			for r := 0; r < len(rows); r++ {
-				for c := 0; c < len(rows[0]); c++ {
-					if colWidths[c] < len(rows[r][c]) {
-						colWidths[c] = len(rows[r][c])
-					}
-				}
-			}
-
-			// Pad out to full width
-			for _, row := range rows {
-				for i := range row {
-					for l := len(row[i]); l < colWidths[i]; l++ {
-						row[i] = row[i] + " "
-					}
-				}
-			}
-
-			rowPos := rl.Vector2{60, 480}
-			for _, row := range rows {
-				drawBasicText(strings.Join(row, " "), rowPos.X, rowPos.Y, 20, rl.Black)
-				rowPos.Y += 24
-			}
-
-			if len(latestResult.Rows) > maxRows {
-				drawBasicText(fmt.Sprintf("and %d more...", len(latestResult.Rows)-maxRows), rowPos.X, rowPos.Y, 20, rl.Black)
-			}
-		}
 	}
 	rl.EndMode2D()
 
@@ -289,7 +243,81 @@ func drawToolbar() {
 		Width:  100,
 		Height: float32(buttHeight),
 	}, "Add Table") {
-		fmt.Println("Adding a Table")
+		table := node.NewTable()
+		table.Pos = rl.Vector2{400, 400}
+		nodes = append(nodes, table)
+	}
+
+	if raygui.Button(rl.Rectangle{
+		X:      140,
+		Y:      float32(toolbarHeight/2) - float32(buttHeight/2),
+		Width:  100,
+		Height: float32(buttHeight),
+	}, "Add Filter") {
+		filter := node.NewFilter()
+		filter.Pos = rl.Vector2{400, 400}
+		nodes = append(nodes, filter)
+	}
+
+	if raygui.Button(rl.Rectangle{
+		X:      260,
+		Y:      float32(toolbarHeight/2) - float32(buttHeight/2),
+		Width:  180,
+		Height: float32(buttHeight),
+	}, "Add Pick Columns") {
+		pc := node.NewPickColumns()
+		pc.Pos = rl.Vector2{400, 400}
+		nodes = append(nodes, pc)
+	}
+}
+
+func displayLastResults() {
+	// display query results (temporary)
+	if latestResult != nil {
+		const maxRows = 20
+
+		var rows [][]string
+		for i := -1; i < len(latestResult.Rows) && i < maxRows; i++ {
+			if i < 0 {
+				// headers
+				rows = append(rows, latestResult.Columns)
+			} else {
+				row := latestResult.Rows[i]
+				valStrings := make([]string, len(row))
+				for i, v := range row {
+					valStrings[i] = fmt.Sprintf("%v", v)
+				}
+				rows = append(rows, valStrings)
+			}
+		}
+
+		colWidths := make([]int, len(rows[0]))
+		for r := 0; r < len(rows); r++ {
+			for c := 0; c < len(rows[0]); c++ {
+				if colWidths[c] < len(rows[r][c]) {
+					colWidths[c] = len(rows[r][c])
+				}
+			}
+		}
+
+		// Pad out to full width
+		for _, row := range rows {
+			for i := range row {
+				for l := len(row[i]); l < colWidths[i]; l++ {
+					row[i] = row[i] + " "
+				}
+			}
+		}
+
+		rowPos := rl.Vector2{60, 480}
+		for _, row := range rows {
+			drawBasicText(strings.Join(row, " "), rowPos.X, rowPos.Y, 20, rl.Black)
+			rowPos.Y += 24
+		}
+
+		if len(latestResult.Rows) > maxRows {
+			drawBasicText(fmt.Sprintf("and %d more...", len(latestResult.Rows)-maxRows), rowPos.X, rowPos.Y, 20, rl.Black)
+		}
 	}
 }
 
@@ -336,7 +364,7 @@ func doLayout() {
 				continue
 			}
 
-			n.InputPinPos[i] = rl.Vector2{n.Pos.X - 1, n.Pos.Y + float32(pinHeight)}
+			n.InputPinPos[i] = rl.Vector2{n.Pos.X, n.Pos.Y + float32(pinHeight)}
 			pinHeight += pinDefaultSpacing
 			inputHeight += pinDefaultSpacing
 		}
@@ -373,6 +401,11 @@ func doLayout() {
 
 		return false
 	})
+
+	// global setup
+	for _, n := range nodes {
+		n.HasChildren = false
+	}
 
 	// unsnapped
 	for _, n := range nodes {
@@ -413,7 +446,7 @@ func doLayout() {
 	// output pin positions (unsnapped)
 	for _, n := range nodes {
 		if !n.Snapped {
-			n.OutputPinPos = rl.Vector2{n.Pos.X + n.Size.X + 1, n.Pos.Y + float32(pinStartHeight)}
+			n.OutputPinPos = rl.Vector2{n.Pos.X + n.Size.X, n.Pos.Y + float32(pinStartHeight)}
 		}
 	}
 
@@ -421,13 +454,16 @@ func doLayout() {
 	for _, n := range nodes {
 		if n.Snapped {
 			current := n
-			for current != nil {
+			for {
 				n.OutputPinPos = current.OutputPinPos
-				if len(current.Inputs) > 0 {
-					current = current.Inputs[0]
-				} else {
-					current = nil
+				if current != n {
+					current.HasChildren = true
 				}
+				if current.Snapped && len(current.Inputs) > 0 {
+					current = current.Inputs[0]
+					continue
+				}
+				break
 			}
 		}
 		n.UIRect = rl.Rectangle{

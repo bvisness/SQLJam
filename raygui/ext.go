@@ -7,11 +7,11 @@ import (
 )
 
 type DropdownEx struct {
+	Open bool
+
 	options []DropdownExOption
 	active  int
-	open    bool
-
-	str string
+	str     string
 }
 
 type DropdownExOption struct {
@@ -34,9 +34,9 @@ func (d *DropdownEx) Do(bounds rl.Rectangle) interface{} {
 		d.active = 0
 	}
 
-	toggle := DropdownBox(bounds, d.str, &d.active, d.open)
+	toggle := DropdownBox(bounds, d.str, &d.active, d.Open)
 	if toggle {
-		d.open = !d.open
+		d.Open = !d.Open
 	}
 
 	if len(d.options) == 0 {
