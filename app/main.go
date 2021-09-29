@@ -53,11 +53,6 @@ func Main() {
 	for !rl.WindowShouldClose() {
 		doFrame()
 	}
-
-	rl.UnloadFont(font)
-
-	ctxTree := node.NewRecursiveGenerated(pick) // try recursive gen
-	fmt.Println(ctxTree.SourceToSql())
 }
 
 var latestResult *queryResult
@@ -225,21 +220,42 @@ func doFrame() {
 		if latestResult != nil {
 			const maxRows = 20
 
-			rowPos := rl.Vector2{60, 480}
+			var rows [][]string
 			for i := -1; i < len(latestResult.Rows) && i < maxRows; i++ {
 				if i < 0 {
-					// print headers
-					drawBasicText(strings.Join(latestResult.Columns, "    "), rowPos.X, rowPos.Y, 20, rl.Black)
+					// headers
+					rows = append(rows, latestResult.Columns)
 				} else {
 					row := latestResult.Rows[i]
 					valStrings := make([]string, len(row))
 					for i, v := range row {
 						valStrings[i] = fmt.Sprintf("%v", v)
 					}
-
-					drawBasicText(strings.Join(valStrings, "    "), rowPos.X, rowPos.Y, 20, rl.Black)
+					rows = append(rows, valStrings)
 				}
+			}
 
+			colWidths := make([]int, len(rows[0]))
+			for r := 0; r < len(rows); r++ {
+				for c := 0; c < len(rows[0]); c++ {
+					if colWidths[c] < len(rows[r][c]) {
+						colWidths[c] = len(rows[r][c])
+					}
+				}
+			}
+
+			// Pad out to full width
+			for _, row := range rows {
+				for i := range row {
+					for l := len(row[i]); l < colWidths[i]; l++ {
+						row[i] = row[i] + " "
+					}
+				}
+			}
+
+			rowPos := rl.Vector2{60, 480}
+			for _, row := range rows {
+				drawBasicText(strings.Join(row, " "), rowPos.X, rowPos.Y, 20, rl.Black)
 				rowPos.Y += 24
 			}
 
