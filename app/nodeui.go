@@ -19,6 +19,8 @@ func doNodeUpdate(n *node.Node) {
 		doPickColumnsUpdate(n, d)
 	case *node.CombineRows:
 		doCombineRowsUpdate(n, d)
+	case *node.Order:
+		doOrderUpdate(n, d)
 	}
 }
 
@@ -33,6 +35,8 @@ func doNodeUI(n *node.Node) {
 		doPickColumnsUI(n, d)
 	case *node.CombineRows:
 		doCombineRowsUI(n, d)
+	case *node.Order:
+		doOrderUI(n, d)
 	}
 }
 
@@ -170,6 +174,90 @@ func doPickColumnsUI(n *node.Node, p *node.PickColumns) {
 
 			col := dropdown.Do(rl.Rectangle{n.UIRect.X, fieldY, n.UIRect.Width, UIFieldHeight})
 			p.Cols[i], _ = col.(string)
+		}()
+	}
+}
+
+func doOrderUpdate(n *node.Node, o *node.Order) {
+	uiHeight := 0
+	for range o.Cols {
+		uiHeight += UIFieldHeight
+		uiHeight += UIFieldSpacing
+	}
+	uiHeight += UIFieldHeight                  // for buttons
+	uiHeight += UIFieldSpacing + UIFieldHeight // for ascending / descending
+
+	n.UISize = rl.Vector2{300, float32(uiHeight)}
+
+	// This will obliterate existing selections on resize,
+	// but this shouldn't happen anyway if we're resizing correctly.
+	if len(o.Cols) != len(o.ColDropdowns) {
+		o.ColDropdowns = make([]raygui.DropdownEx, len(o.Cols))
+	}
+
+	opts := columnNameDropdownOpts(n.Inputs[0])
+	for i := range o.ColDropdowns {
+		dropdown := &o.ColDropdowns[i]
+		dropdown.SetOptions(opts...)
+	}
+}
+
+func doOrderUI(n *node.Node, o *node.Order) {
+	openDropdown, isOpen := raygui.GetOpenDropdown(o.ColDropdowns)
+	if isOpen {
+		raygui.Disable()
+		defer raygui.Enable()
+	}
+
+	// Render bottom to top to avoid overlap issues with dropdowns
+
+	fieldY := n.UIRect.Y + n.UIRect.Height - UIFieldHeight
+
+	activeSort := 0
+	if o.Descending {
+		activeSort = 1
+	}
+	newSort := raygui.ComboBox(rl.Rectangle{n.UIRect.X, fieldY, n.UIRect.Width, UIFieldHeight}, "A-Z;Z-A", activeSort)
+	switch newSort {
+	case 1:
+		o.Descending = true
+	default:
+		o.Descending = false
+	}
+
+	fieldY -= UIFieldHeight + UIFieldSpacing
+	if raygui.Button(rl.Rectangle{
+		n.UIRect.X,
+		fieldY,
+		n.UIRect.Width/2 - UIFieldSpacing/2,
+		UIFieldHeight,
+	}, "+") {
+		o.Cols = append(o.Cols, "")
+		o.ColDropdowns = append(o.ColDropdowns, raygui.DropdownEx{})
+	}
+	if raygui.Button(rl.Rectangle{
+		n.UIRect.X + n.UIRect.Width/2 + UIFieldSpacing/2,
+		fieldY,
+		n.UIRect.Width/2 - UIFieldSpacing/2,
+		UIFieldHeight,
+	}, "-") {
+		if len(o.Cols) > 1 {
+			o.Cols = o.Cols[:len(o.Cols)-1]
+			o.ColDropdowns = o.ColDropdowns[:len(o.ColDropdowns)-1]
+		}
+	}
+
+	for i := range o.ColDropdowns {
+		fieldY -= UIFieldSpacing + UIFieldHeight
+		func() {
+			dropdown := &o.ColDropdowns[i]
+			if openDropdown == dropdown {
+				raygui.Enable()
+				defer raygui.Disable()
+			}
+
+			col := dropdown.Do(rl.Rectangle{n.UIRect.X, fieldY, n.UIRect.Width, UIFieldHeight})
+			o.Cols[i], _ = col.(string)
 		}()
 	}
 }

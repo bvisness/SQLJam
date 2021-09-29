@@ -65,6 +65,16 @@ func NewFilter() *Node {
 	}
 }
 
+func NewOrder() *Node {
+	return &Node{
+		Title:   "Order",
+		CanSnap: true,
+		Color:   rl.NewColor(255, 204, 128, 255),
+		Inputs:  make([]*Node, 1),
+		Data:    &Order{},
+	}
+}
+
 func NewCombineRows(combineType CombineType) *Node {
 	return &Node{
 		Title:   "Combine Rows",

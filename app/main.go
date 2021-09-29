@@ -281,6 +281,17 @@ func drawToolbar() {
 		cr.Pos = rl.Vector2{400, 400}
 		nodes = append(nodes, cr)
 	}
+
+	if raygui.Button(rl.Rectangle{
+		X:      660,
+		Y:      float32(toolbarHeight/2) - float32(buttHeight/2),
+		Width:  100,
+		Height: float32(buttHeight),
+	}, "Add Order") {
+		pc := node.NewOrder()
+		pc.Pos = rl.Vector2{400, 400}
+		nodes = append(nodes, pc)
+	}
 }
 
 func displayLastResults() {
