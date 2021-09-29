@@ -98,7 +98,7 @@ func doFrame() {
 			}
 
 			// They're not stacked, but find their parents and sort by that.
-			if snapRoot(a).Sort < snapRoot(b).Sort {
+			if SnapRoot(a).Sort < SnapRoot(b).Sort {
 				return true
 			}
 
@@ -191,7 +191,7 @@ func doFrame() {
 
 			titleHover := CheckCollisionPointRec2D(rl.GetMousePosition(), titleBarRect)
 			if titleHover {
-				drawBasicText(n.GenerateSql(), titleBarRect.X, titleBarRect.Y-22, 20, rl.Black)
+				drawBasicText(n.GenerateSql(), titleBarRect.X, SnapRoot(n).Pos.Y-22, 20, rl.Black)
 			}
 			if titleHover && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
 				if tryStartDrag(n, n.Pos) {
@@ -535,7 +535,7 @@ func nodeSortTop() int {
 	return topSortValue
 }
 
-func snapRoot(n *node.Node) *node.Node {
+func SnapRoot(n *node.Node) *node.Node {
 	root := n
 	for {
 		if root.Snapped && len(root.Inputs) > 0 {
