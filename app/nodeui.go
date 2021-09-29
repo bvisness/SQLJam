@@ -97,21 +97,18 @@ func doFilterUI(n *node.Node, f *node.Filter) {
 	f.Conditions = f.TextBox.Do(n.UIRect, f.Conditions, 100)
 }
 
-const pickColumnsFieldHeight = 24
-const pickColumnsFieldSpacing = 4
+const UIFieldHeight = 24
+const UIFieldSpacing = 4
 
 func doPickColumnsUpdate(n *node.Node, p *node.PickColumns) {
 	uiHeight := 0
 	for range p.Cols {
-		uiHeight += pickColumnsFieldHeight
-		uiHeight += pickColumnsFieldSpacing
+		uiHeight += UIFieldHeight
+		uiHeight += UIFieldSpacing
 	}
-	uiHeight += pickColumnsFieldHeight // for buttons
+	uiHeight += UIFieldHeight // for buttons
 
 	n.UISize = rl.Vector2{300, float32(uiHeight)}
-
-	// Get schema (if necessary) and update UI data
-	// TODO: don't do this every frame plz
 
 	// This will obliterate existing selections on resize,
 	// but this shouldn't happen anyway if we're resizing correctly.
@@ -119,62 +116,37 @@ func doPickColumnsUpdate(n *node.Node, p *node.PickColumns) {
 		p.ColDropdowns = make([]raygui.DropdownEx, len(p.Cols))
 	}
 
-	if n.Inputs[0] != nil {
-		var opts []raygui.DropdownExOption
-
-		schemaCols, err := getSchema(n.Inputs[0])
-		if err == nil {
-			for _, col := range schemaCols {
-				opts = append(opts, raygui.DropdownExOption{
-					Name:  col,
-					Value: col,
-				})
-			}
-		} else {
-			log.Print(err)
-			opts = append(opts, raygui.DropdownExOption{"ERROR", "ERROR"})
-		}
-
-		for i := range p.ColDropdowns {
-			dropdown := &p.ColDropdowns[i]
-			dropdown.SetOptions(opts...)
-		}
+	opts := columnNameDropdownOpts(n.Inputs[0])
+	for i := range p.ColDropdowns {
+		dropdown := &p.ColDropdowns[i]
+		dropdown.SetOptions(opts...)
 	}
 }
 
 func doPickColumnsUI(n *node.Node, p *node.PickColumns) {
-	// TODO: Could we, like, do a closure or something
-	var deferredDropdown *raygui.DropdownEx
-	var deferredDropdownI int
-	var deferredDropdownY float32
-
-	fieldY := n.UIRect.Y
-	for i := range p.ColDropdowns {
-		dropdown := &p.ColDropdowns[i]
-		if dropdown.Open && deferredDropdown == nil {
-			deferredDropdown = dropdown
-			deferredDropdownY = fieldY
-		} else {
-			col := dropdown.Do(rl.Rectangle{n.UIRect.X, fieldY, n.UIRect.Width, pickColumnsFieldHeight})
-			p.Cols[i], _ = col.(string)
-		}
-		fieldY += pickColumnsFieldHeight + pickColumnsFieldSpacing
+	openDropdown, isOpen := raygui.GetOpenDropdown(p.ColDropdowns)
+	if isOpen {
+		raygui.Disable()
+		defer raygui.Enable()
 	}
 
+	// Render bottom to top to avoid overlap issues with dropdowns
+
+	fieldY := n.UIRect.Y + n.UIRect.Height - UIFieldHeight
 	if raygui.Button(rl.Rectangle{
 		n.UIRect.X,
 		fieldY,
-		n.UIRect.Width/2 - pickColumnsFieldSpacing/2,
-		pickColumnsFieldHeight,
+		n.UIRect.Width/2 - UIFieldSpacing/2,
+		UIFieldHeight,
 	}, "+") {
 		p.Cols = append(p.Cols, "")
 		p.ColDropdowns = append(p.ColDropdowns, raygui.DropdownEx{})
 	}
 	if raygui.Button(rl.Rectangle{
-		n.UIRect.X + n.UIRect.Width/2 + pickColumnsFieldSpacing/2,
+		n.UIRect.X + n.UIRect.Width/2 + UIFieldSpacing/2,
 		fieldY,
-		n.UIRect.Width/2 - pickColumnsFieldSpacing/2,
-		pickColumnsFieldHeight,
+		n.UIRect.Width/2 - UIFieldSpacing/2,
+		UIFieldHeight,
 	}, "-") {
 		if len(p.Cols) > 1 {
 			p.Cols = p.Cols[:len(p.Cols)-1]
@@ -182,9 +154,18 @@ func doPickColumnsUI(n *node.Node, p *node.PickColumns) {
 		}
 	}
 
-	if deferredDropdown != nil {
-		col := deferredDropdown.Do(rl.Rectangle{n.UIRect.X, deferredDropdownY, n.UIRect.Width, pickColumnsFieldHeight})
-		p.Cols[deferredDropdownI], _ = col.(string)
+	for i := range p.ColDropdowns {
+		fieldY -= UIFieldSpacing + UIFieldHeight
+		func() {
+			dropdown := &p.ColDropdowns[i]
+			if openDropdown == dropdown {
+				raygui.Enable()
+				defer raygui.Disable()
+			}
+
+			col := dropdown.Do(rl.Rectangle{n.UIRect.X, fieldY, n.UIRect.Width, UIFieldHeight})
+			p.Cols[i], _ = col.(string)
+		}()
 	}
 }
 
@@ -196,4 +177,30 @@ func getSchema(n *node.Node) ([]string, error) {
 	defer rows.Close()
 
 	return rows.Columns()
+}
+
+var errorOpts = []raygui.DropdownExOption{{"ERROR", "ERROR"}}
+
+// Gets dropdown options for the table produced by the given node.
+// Returns default options if no schema can be found.
+func columnNameDropdownOpts(inputNode *node.Node) []raygui.DropdownExOption {
+	if inputNode == nil {
+		return errorOpts
+	}
+
+	var opts []raygui.DropdownExOption
+	schemaCols, err := getSchema(inputNode)
+	if err == nil {
+		for _, col := range schemaCols {
+			opts = append(opts, raygui.DropdownExOption{
+				Name:  col,
+				Value: col,
+			})
+		}
+	} else {
+		log.Print(err)
+		return errorOpts
+	}
+
+	return opts
 }

@@ -71,6 +71,16 @@ type Filter struct {
 	TextBox raygui.TextBoxEx
 }
 
+type Order struct {
+	NodeData
+
+	Alias      string
+	Cols       []string
+	Descending bool
+
+	ColDropdowns []raygui.DropdownEx
+}
+
 // A context for node generation recursion.
 // Eventually, we can no longer add onto this query. Thus,
 // we continue recursive generation with a new Source context object.

@@ -27,12 +27,7 @@ func NewDropdownEx(opts ...DropdownExOption) DropdownEx {
 }
 
 func (d *DropdownEx) Do(bounds rl.Rectangle) interface{} {
-	if d.active >= len(d.options) {
-		d.active = len(d.options) - 1
-	}
-	if d.active < 0 {
-		d.active = 0
-	}
+	d.fixupActive()
 
 	toggle := DropdownBox(bounds, d.str, &d.active, d.Open)
 	if toggle {
@@ -58,6 +53,26 @@ func (d *DropdownEx) SetOptions(opts ...DropdownExOption) {
 
 	d.options = opts
 	d.str = strings.Join(names, ";")
+}
+
+func (d *DropdownEx) fixupActive() {
+	if d.active >= len(d.options) {
+		d.active = len(d.options) - 1
+	}
+	if d.active < 0 {
+		d.active = 0
+	}
+}
+
+func GetOpenDropdown(dropdowns []DropdownEx) (*DropdownEx, bool) {
+	for i := range dropdowns {
+		other := &dropdowns[i]
+		if other.Open {
+			return other, true
+		}
+	}
+
+	return nil, false
 }
 
 type TextBoxEx struct {
