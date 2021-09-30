@@ -74,7 +74,7 @@ type JoinCondition struct {
 
 type Join struct {
 	NodeData
-	Conditions []JoinCondition
+	Conditions []*JoinCondition
 }
 
 type Filter struct {

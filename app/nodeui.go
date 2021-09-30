@@ -300,7 +300,7 @@ func doJoinUpdate(n *node.Node, j *node.Join) {
 	for i := range n.Inputs[1:] {
 		fmt.Println(i)
 		if len(j.Conditions) < i+1 {
-			j.Conditions = append(j.Conditions, node.JoinCondition{
+			j.Conditions = append(j.Conditions, &node.JoinCondition{
 				Type:      node.InnerJoin,
 				Condition: "???",
 				TextBox:   &raygui.TextBoxEx{},
@@ -312,7 +312,7 @@ func doJoinUpdate(n *node.Node, j *node.Join) {
 
 func doJoinUI(n *node.Node, j *node.Join) {
 	for _, condition := range j.Conditions {
-		condition.TextBox.Do(n.UIRect, condition.Condition, 10)
+		condition.Condition = condition.TextBox.Do(n.UIRect, condition.Condition, 100)
 	}
 }
 

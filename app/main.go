@@ -532,8 +532,32 @@ func trySnapNode(n *node.Node) {
 		}
 
 		if CheckCollisionPointRec2D(rl.GetMousePosition(), other.SnapTargetRect) {
+			// See snapping.png.
+
+			oldLeaf := SnapLeaf(other)
+			newRoot := SnapRoot(other)
+			newLeaf := SnapLeaf(n)
+
+			// make nodes pointing at oldLeaf point to newLeaf
+			for _, other := range nodes {
+				for i := range other.Inputs {
+					if other.Inputs[i] == oldLeaf {
+						other.Inputs[i] = newLeaf
+					}
+				}
+			}
+
+			// break cycles - if new root points at new leaf, set it to nil
+			for i := range newRoot.Inputs {
+				if newRoot.Inputs[i] == newLeaf {
+					newRoot.Inputs[i] = nil
+				}
+			}
+
+			// Snap! ^_^
+			n.Inputs[0] = SnapLeaf(other)
 			n.Snapped = true
-			n.Inputs[0] = other
+
 			break
 		}
 	}
@@ -547,16 +571,41 @@ func nodeSortTop() int {
 }
 
 func SnapRoot(n *node.Node) *node.Node {
+	root, _ := SnapRootAndDistance(n)
+	return root
+}
+
+func SnapRootAndDistance(n *node.Node) (*node.Node, int) {
+	distance := 0
 	root := n
 	for {
-		if root.Snapped && len(root.Inputs) > 0 {
+		if root.Snapped && len(root.Inputs) > 0 && root.Inputs[0] != nil {
 			root = root.Inputs[0]
+			distance++
 			continue
 		}
 		break
 	}
 
-	return root
+	return root, distance
+}
+
+// this is not efficient, who cares
+func SnapLeaf(n *node.Node) *node.Node {
+	root := SnapRoot(n)
+
+	// The leaf is the node farthest from the snap root
+	leaf := n
+	maxDistToRoot := 0
+	for _, other := range nodes {
+		otherRoot, distance := SnapRootAndDistance(other)
+		if otherRoot == root && distance > maxDistToRoot {
+			maxDistToRoot = distance
+			leaf = other
+		}
+	}
+
+	return leaf
 }
 
 func isSnappedUnder(a, b *node.Node) bool {

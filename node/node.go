@@ -91,12 +91,11 @@ func NewCombineRows(combineType CombineType) *Node {
 
 func NewJoin() *Node {
 	return &Node{
-		Title: "Join",
+		Title:   "Join",
 		CanSnap: false,
-		Color: rl.NewColor(102, 187, 106, 255),
-		Inputs: make([]*Node, 2),
-		Data: &Join{
-		},
+		Color:   rl.NewColor(102, 187, 106, 255),
+		Inputs:  make([]*Node, 2),
+		Data:    &Join{},
 	}
 }
 
