@@ -67,9 +67,9 @@ const (
 )
 
 type JoinCondition struct {
-	Type JoinType
+	Type      JoinType
 	Condition string
-	TextBox raygui.TextBoxEx
+	TextBox   *raygui.TextBoxEx
 }
 
 type Join struct {
@@ -108,7 +108,6 @@ type GenOrder struct {
 	Col        string
 	Descending bool
 }
-
 
 // A context for node generation recursion.
 // Eventually, we can no longer add onto this query. Thus,

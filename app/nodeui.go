@@ -299,11 +299,11 @@ func doJoinUpdate(n *node.Node, j *node.Join) {
 	// TODO probably put this somewhere else?
 	for i := range n.Inputs[1:] {
 		fmt.Println(i)
-		if len(j.Conditions) < i + 1 {
+		if len(j.Conditions) < i+1 {
 			j.Conditions = append(j.Conditions, node.JoinCondition{
-				Type: node.InnerJoin,
+				Type:      node.InnerJoin,
 				Condition: "???",
-				TextBox: raygui.TextBoxEx{},
+				TextBox:   &raygui.TextBoxEx{},
 			})
 		}
 	}
