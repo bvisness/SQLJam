@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/bvisness/SQLJam/node"
@@ -21,6 +22,8 @@ func doNodeUpdate(n *node.Node) {
 		doCombineRowsUpdate(n, d)
 	case *node.Order:
 		doOrderUpdate(n, d)
+	case *node.Join:
+		doJoinUpdate(n, d)
 	}
 }
 
@@ -37,6 +40,8 @@ func doNodeUI(n *node.Node) {
 		doCombineRowsUI(n, d)
 	case *node.Order:
 		doOrderUI(n, d)
+	case *node.Join:
+		doJoinUI(n, d)
 	}
 }
 
@@ -272,6 +277,7 @@ func doOrderUI(n *node.Node, o *node.Order) {
 }
 
 func doCombineRowsUpdate(n *node.Node, c *node.CombineRows) {
+	n.UISize = rl.Vector2{X: 200, Y: float32(48)}
 	c.Dropdown.SetOptions(combineRowsOpts...)
 }
 
@@ -279,15 +285,35 @@ var combineRowsOpts = []raygui.DropdownExOption{
 	{"UNION", node.Union},
 	{"UNION ALL", node.UnionAll},
 	{"INTERSECT", node.Intersect},
-	{"INTERSECT ALL", node.IntersectAll},
 	{"EXCEPT", node.Except},
-	{"EXCEPT ALL", node.ExceptAll},
 }
 
 func doCombineRowsUI(n *node.Node, d *node.CombineRows) {
-	n.UISize = rl.Vector2{X: 200, Y: float32(48)}
 	chosen := d.Dropdown.Do(n.UIRect)
 	d.CombinationType = chosen.(node.CombineType)
+}
+
+func doJoinUpdate(n *node.Node, j *node.Join) {
+	n.UISize = rl.Vector2{X: 200, Y: float32(48)}
+
+	// TODO probably put this somewhere else?
+	for i := range n.Inputs[1:] {
+		fmt.Println(i)
+		if len(j.Conditions) < i + 1 {
+			j.Conditions = append(j.Conditions, node.JoinCondition{
+				Type: node.InnerJoin,
+				Condition: "???",
+				TextBox: raygui.TextBoxEx{},
+			})
+		}
+	}
+
+}
+
+func doJoinUI(n *node.Node, j *node.Join) {
+	for _, condition := range j.Conditions {
+		condition.TextBox.Do(n.UIRect, condition.Condition, 10)
+	}
 }
 
 func getSchema(n *node.Node) ([]string, error) {

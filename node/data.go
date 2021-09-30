@@ -46,11 +46,9 @@ type CombineType int
 
 const (
 	Union CombineType = iota + 1
+	UnionAll
 	Intersect
 	Except
-	UnionAll
-	IntersectAll
-	ExceptAll
 )
 
 type CombineRows struct {
@@ -59,9 +57,24 @@ type CombineRows struct {
 	Dropdown        raygui.DropdownEx
 }
 
+type JoinType int
+
+const (
+	LeftJoin JoinType = iota + 1
+	RightJoin
+	InnerJoin
+	OuterJoin
+)
+
+type JoinCondition struct {
+	Type JoinType
+	Condition string
+	TextBox raygui.TextBoxEx
+}
+
 type Join struct {
 	NodeData
-	Conditions []string
+	Conditions []JoinCondition
 }
 
 type Filter struct {
@@ -86,11 +99,6 @@ type OrderColumn struct {
 	Descending bool
 }
 
-// A context for node generation recursion.
-// Eventually, we can no longer add onto this query. Thus,
-// we continue recursive generation with a new Source context object.
-// Thus this is basically a recursive tree
-
 type GenCombine struct {
 	Context *NodeGenContext
 	Type    CombineType
@@ -100,6 +108,12 @@ type GenOrder struct {
 	Col        string
 	Descending bool
 }
+
+
+// A context for node generation recursion.
+// Eventually, we can no longer add onto this query. Thus,
+// we continue recursive generation with a new Source context object.
+// Thus this is basically a recursive tree
 
 type NodeGenContext struct {
 	SqlSource

@@ -89,6 +89,17 @@ func NewCombineRows(combineType CombineType) *Node {
 	}
 }
 
+func NewJoin() *Node {
+	return &Node{
+		Title: "Join",
+		CanSnap: false,
+		Color: rl.NewColor(102, 187, 106, 255),
+		Inputs: make([]*Node, 2),
+		Data: &Join{
+		},
+	}
+}
+
 func (n *Node) OldSqlGen(hasParent bool) string {
 	if n == nil {
 		return ""
@@ -144,10 +155,6 @@ func (n *Node) OldSqlGen(hasParent bool) string {
 				used = "EXCEPT"
 			case UnionAll:
 				used = "UNION ALL"
-			case IntersectAll:
-				used = "INTERSECT ALL"
-			case ExceptAll:
-				used = "EXCEPT ALL"
 			}
 			return fmt.Sprintf("%s %s %s", n.Inputs[0], used, n.Inputs[1])
 		} else {

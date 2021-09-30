@@ -61,10 +61,6 @@ func (ctx *NodeGenContext) SourceToSql() string {
 				used = "EXCEPT"
 			case UnionAll:
 				used = "UNION ALL"
-			case IntersectAll:
-				used = "INTERSECT ALL"
-			case ExceptAll:
-				used = "EXCEPT ALL"
 			}
 			sql += fmt.Sprintf(" %s %s ", used, gc.Context.SourceToSql())
 		}
@@ -134,6 +130,27 @@ func (ctx *NodeGenContext) RecursiveGenerate(n *Node) *NodeGenContext {
 							Context: NewRecursiveContext(input),
 							Type:    d.CombinationType,
 						})
+					}
+				}
+			}
+		}
+	case *Join:
+		numNotNull := 0
+		for _, input := range n.Inputs {
+			if input != nil {
+				numNotNull++
+			}
+		}
+
+		// Top input gets recursive generated as normal in same context
+		if n.Inputs[0] != nil {
+			ctx.RecursiveGenerate(n.Inputs[0])
+			// Only do combines if first wire and at least one other wire is connected
+			if numNotNull >= 2 {
+				// All other inputs get thrown into a new recursive context
+				for _, input := range n.Inputs[1:] {
+					if input != nil {
+						ctx.Joins = append(ctx.Joins, *NewRecursiveContext(input))
 					}
 				}
 			}
