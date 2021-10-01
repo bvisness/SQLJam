@@ -44,12 +44,14 @@ func doJoinUI(n *node.Node, j *node.Join) {
 			UIFieldHeight,
 			UIFieldHeight,
 		}, "L", condition.Left)
+		raygui.Disable() // lol thank you sqlite
 		condition.Right = raygui.Toggle(rl.Rectangle{
 			uiRight - UIFieldHeight,
 			float32(fieldY),
 			UIFieldHeight,
 			UIFieldHeight,
 		}, "R", condition.Right)
+		raygui.Enable()
 
 		fieldY += UIFieldHeight + UIFieldSpacing
 	}
