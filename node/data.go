@@ -5,7 +5,7 @@ type NodeData interface {
 }
 
 type SqlSource interface {
-	SourceToSql() string
+	SourceToSql(indent int) string
 	SourceAlias() string
 }
 

@@ -5,12 +5,12 @@ import (
 	"strings"
 )
 
-// Creates an empty query context.
+// NewQueryContext Creates an empty query context.
 func NewQueryContext() *QueryContext {
 	return &QueryContext{}
 }
 
-// Creates a query context and fills it with data from a given node.
+// NewQueryContextFromNode Creates a query context and fills it with data from a given node.
 // For example, calling this with a Table/Filter will result in this
 // structure:
 //
@@ -21,7 +21,7 @@ func NewQueryContextFromNode(n *Node) *QueryContext {
 	return NewQueryContext().CreateQuery(n)
 }
 
-// Wraps the given query context in a new, empty context. Use when you
+// WrapQueryContext Wraps the given query context in a new, empty context. Use when you
 // want to break something...into a subquery.
 func WrapQueryContext(ctx *QueryContext) *QueryContext {
 	return &QueryContext{
@@ -29,12 +29,16 @@ func WrapQueryContext(ctx *QueryContext) *QueryContext {
 	}
 }
 
+func Indented(s string, amount int) string {
+	return strings.Repeat("\t", amount) + s
+}
+
 // SourceToSql Turns a context tree into an SQL statement string
-func (ctx *QueryContext) SourceToSql() string {
+func (ctx *QueryContext) SourceToSql(indent int) string {
 	var sql string
 
 	if len(ctx.Combines) > 0 {
-		sql += ctx.Source.SourceToSql()
+		sql += ctx.Source.SourceToSql(indent)
 		for _, gc := range ctx.Combines {
 			used := ""
 			switch gc.Type {
@@ -47,10 +51,11 @@ func (ctx *QueryContext) SourceToSql() string {
 			case UnionAll:
 				used = "UNION ALL"
 			}
-			sql = fmt.Sprintf("%s %s %s", sql, used, gc.Context.SourceToSql())
+			sql += "\n" + Indented(used, indent)
+			sql += "\n" + gc.Context.SourceToSql(indent) + "\n"
 		}
 	} else {
-		sql += "SELECT "
+		sql += Indented("SELECT ", indent)
 
 		if len(ctx.Cols) == 0 {
 			sql += "*"
@@ -67,30 +72,43 @@ func (ctx *QueryContext) SourceToSql() string {
 		}
 
 		if ctx.Source == nil {
-			return "Error: No SQL Source"
+			return Indented("Error: No SQL Source", indent)
 		} else {
+			sql += "\n" + Indented("", indent)
 			switch ctx.Source.(type) {
 			case *Table:
-				sql += fmt.Sprintf(" FROM %s", ctx.Source.SourceToSql())
+				sql += fmt.Sprintf("FROM %s", ctx.Source.SourceToSql(0))
 			default:
-				sql += fmt.Sprintf(" FROM (%s)", ctx.Source.SourceToSql())
+				sql += fmt.Sprintf("FROM (\n%s", ctx.Source.SourceToSql(indent + 1))
+				sql += "\n" + Indented(")", indent)
 			}
 
 			sql += " AS a"
 		}
 
 		for _, join := range ctx.Joins {
-			sql += fmt.Sprintf(" %s (%s) AS %s ON %s", join.Type.String(), join.Source.SourceToSql(), join.Source.SourceAlias(), join.Condition)
+			sql += "\n" + Indented(join.Type.String(), indent) + " "
+			switch join.Source.(type) {
+			case *Table:
+				sql += join.Source.SourceToSql(indent)
+			default:
+				sql += "(\n" + join.Source.SourceToSql(indent + 1)
+				sql += "\n" + Indented(")", indent)
+			}
+			sql += fmt.Sprintf(" AS %s", join.Source.SourceAlias())
+			if join.Condition != "" {
+				sql += fmt.Sprintf(" ON %s", join.Condition)
+			}
 		}
 
 		if len(ctx.FilterConditions) > 0 && ctx.FilterConditions[0] != "" {
-			sql += " WHERE "
+			sql += "\n" + Indented("WHERE ", indent)
 			sql += strings.Join(ctx.FilterConditions, " AND ")
 		}
 	}
 
 	if len(ctx.Orders) > 0 {
-		sql += " ORDER BY "
+		sql += Indented("\nORDER BY ", indent)
 		var orderStrings []string
 		for _, order := range ctx.Orders {
 			direction := ""
@@ -207,5 +225,5 @@ func (ctx *QueryContext) RecursiveGenerateInputs(n *Node) *QueryContext {
 }
 
 func (n *Node) GenerateSql() string {
-	return NewQueryContextFromNode(n).SourceToSql()
+	return NewQueryContextFromNode(n).SourceToSql(0)
 }

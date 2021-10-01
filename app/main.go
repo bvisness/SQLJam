@@ -222,7 +222,11 @@ func doFrame() {
 
 			titleHover := rl.CheckCollisionPointRec(raygui.GetMousePositionWorld(), titleBarRect)
 			if titleHover {
-				drawBasicText(n.GenerateSql(), titleBarRect.X, SnapRoot(n).Pos.Y-22, 20, rl.Black)
+				toDraw := n.GenerateSql()
+				charSize := 25
+				lineHeight := charSize + 11
+				numLines := strings.Count(toDraw, "\n") + 1
+				drawBasicText(n.GenerateSql(), titleBarRect.X, SnapRoot(n).Pos.Y - float32(numLines * lineHeight), float32(charSize), rl.Black)
 			}
 			if titleHover && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
 				if tryStartDrag(n, n.Pos) {

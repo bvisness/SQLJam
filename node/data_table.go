@@ -16,7 +16,7 @@ type Table struct {
 }
 
 
-func (t *Table) SourceToSql() string {
+func (t *Table) SourceToSql(indent int) string {
 	return t.Table
 }
 
