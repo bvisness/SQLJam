@@ -33,13 +33,43 @@ type PickColumns struct {
 	NodeData
 	SqlSource
 	Alias string
-	Cols  []string
 
-	ColDropdowns []raygui.DropdownEx
+	Entries []*PickColumnsEntry
+}
+
+type PickColumnsEntry struct {
+	Col          string
+	ColDropdown  raygui.DropdownEx
+	Alias        string
+	AliasTextbox raygui.TextBoxEx
 }
 
 func (pc *PickColumns) SourceAlias() string {
 	return pc.Alias
+}
+
+func (pc *PickColumns) Cols() []string {
+	res := make([]string, len(pc.Entries))
+	for i := range res {
+		res[i] = pc.Entries[i].Col
+	}
+	return res
+}
+
+func (pc *PickColumns) Aliases() []string {
+	res := make([]string, len(pc.Entries))
+	for i := range res {
+		res[i] = pc.Entries[i].Alias
+	}
+	return res
+}
+
+func (pc *PickColumns) ColDropdowns() []*raygui.DropdownEx {
+	res := make([]*raygui.DropdownEx, len(pc.Entries))
+	for i := range res {
+		res[i] = &pc.Entries[i].ColDropdown
+	}
+	return res
 }
 
 type CombineType int
@@ -91,7 +121,7 @@ type Order struct {
 	Alias string
 	Cols  []OrderColumn
 
-	ColDropdowns []raygui.DropdownEx
+	ColDropdowns []*raygui.DropdownEx
 }
 
 type OrderColumn struct {
@@ -100,7 +130,7 @@ type OrderColumn struct {
 }
 
 type GenCombine struct {
-	Context *NodeGenContext
+	Context *QueryContext
 	Type    CombineType
 }
 
@@ -114,15 +144,15 @@ type GenOrder struct {
 // we continue recursive generation with a new Source context object.
 // Thus this is basically a recursive tree
 
-type NodeGenContext struct {
-	SqlSource
-	Alias  string
-	Cols   []string
-	Source SqlSource // or NodeGenContext
+type QueryContext struct {
+	Alias      string
+	Cols       []string
+	ColAliases []string
+	Source     SqlSource // or NodeGenContext
 
 	Combines []GenCombine
 
-	Joins          []NodeGenContext
+	Joins          []*QueryContext
 	JoinConditions []string
 
 	FilterConditions []string
@@ -130,6 +160,8 @@ type NodeGenContext struct {
 	Orders []GenOrder
 }
 
-func (ctx *NodeGenContext) SourceAlias() string {
+var _ SqlSource = &QueryContext{}
+
+func (ctx *QueryContext) SourceAlias() string {
 	return ctx.Alias
 }

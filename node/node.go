@@ -50,7 +50,7 @@ func NewPickColumns() *Node {
 		Color:   rl.NewColor(244, 143, 177, 255),
 		Inputs:  make([]*Node, 1),
 		Data: &PickColumns{
-			Cols: make([]string, 1),
+			Entries: []*PickColumnsEntry{{}},
 		},
 	}
 }
@@ -72,7 +72,8 @@ func NewOrder() *Node {
 		Color:   rl.NewColor(255, 204, 128, 255),
 		Inputs:  make([]*Node, 1),
 		Data: &Order{
-			Cols: make([]OrderColumn, 1),
+			Cols:         make([]OrderColumn, 1),
+			ColDropdowns: raygui.MakeDropdownExList(1),
 		},
 	}
 }
@@ -119,14 +120,12 @@ func (n *Node) OldSqlGen(hasParent bool) string {
 		}
 		return ourQuery
 	case *PickColumns:
-		var cols = d.Cols
-		colsJoined := strings.Join(cols, ", ")
+		colsJoined := strings.Join(d.Cols(), ", ")
 
 		if len(n.Inputs) == 0 {
 			// TODO: Return some kind of nice compile error
 			return "ERROR"
 		} else if len(n.Inputs) == 1 {
-
 			return fmt.Sprintf("SELECT %s FROM (%s)", colsJoined, n.Inputs[0].OldSqlGen(true))
 		} else {
 			panic("Pick Columns node had more than one input")

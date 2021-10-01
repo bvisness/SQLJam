@@ -26,6 +26,15 @@ func NewDropdownEx(opts ...DropdownExOption) DropdownEx {
 	return d
 }
 
+func MakeDropdownExList(n int, opts ...DropdownExOption) []*DropdownEx {
+	list := make([]*DropdownEx, n)
+	for i := range list {
+		d := NewDropdownEx(opts...)
+		list[i] = &d
+	}
+	return list
+}
+
 func (d *DropdownEx) Do(bounds rl.Rectangle) interface{} {
 	d.fixupActive()
 
@@ -64,9 +73,8 @@ func (d *DropdownEx) fixupActive() {
 	}
 }
 
-func GetOpenDropdown(dropdowns []DropdownEx) (*DropdownEx, bool) {
-	for i := range dropdowns {
-		other := &dropdowns[i]
+func GetOpenDropdown(dropdowns []*DropdownEx) (*DropdownEx, bool) {
+	for _, other := range dropdowns {
 		if other.Open {
 			return other, true
 		}
@@ -81,6 +89,15 @@ type TextBoxEx struct {
 
 func NewTextBoxEx() TextBoxEx {
 	return TextBoxEx{}
+}
+
+func MakeTextBoxExList(n int) []*TextBoxEx {
+	list := make([]*TextBoxEx, n)
+	for i := range list {
+		t := NewTextBoxEx()
+		list[i] = &t
+	}
+	return list
 }
 
 func (t *TextBoxEx) Do(bounds rl.Rectangle, text string, textSize int) string {

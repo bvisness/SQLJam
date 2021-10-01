@@ -393,10 +393,10 @@ func doLayout() {
 	const snapRectHeight = 30
 
 	basicLayout := func(n *node.Node) {
-		width := n.UISize.X + 2*uiPadding
-
-		inputHeight := titleBarHeight
-		outputHeight := titleBarHeight
+		n.Size = rl.Vector2{
+			float32(n.UISize.X + 2*uiPadding),
+			float32(titleBarHeight + uiPadding + int(n.UISize.Y) + uiPadding),
+		}
 
 		// init InputPinPos if necessary
 		if len(n.InputPinPos) != len(n.Inputs) {
@@ -411,22 +411,7 @@ func doLayout() {
 
 			n.InputPinPos[i] = rl.Vector2{n.Pos.X, n.Pos.Y + float32(pinHeight)}
 			pinHeight += pinDefaultSpacing
-			inputHeight += pinDefaultSpacing
 		}
-
-		if !n.Snapped {
-			outputHeight += pinDefaultSpacing
-		}
-
-		height := inputHeight
-		if outputHeight > height {
-			height = outputHeight
-		}
-
-		// TODO: lol ignore the above
-		height = titleBarHeight + uiPadding + int(n.UISize.Y) + uiPadding
-
-		n.Size = rl.Vector2{float32(width), float32(height)}
 	}
 
 	// sort nodes to ensure processing order
@@ -533,6 +518,7 @@ func trySnapNode(n *node.Node) {
 
 		if CheckCollisionPointRec2D(rl.GetMousePosition(), other.SnapTargetRect) {
 			// See snapping.png.
+			// INVARIANT: Nodes must always be pointing at the leaves of stacks.
 
 			oldLeaf := SnapLeaf(other)
 			newRoot := SnapRoot(other)
