@@ -4,54 +4,13 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/bvisness/SQLJam/node"
 	"github.com/bvisness/SQLJam/raygui"
 )
-
-// Before drawing. Sort out your data, set your layout info, etc.
-func doNodeUpdate(n *node.Node) {
-	switch d := n.Data.(type) {
-	case *node.Table:
-		doTableUpdate(n, d)
-	case *node.Filter:
-		doFilterUpdate(n, d)
-	case *node.PickColumns:
-		doPickColumnsUpdate(n, d)
-	case *node.CombineRows:
-		doCombineRowsUpdate(n, d)
-	case *node.Order:
-		doOrderUpdate(n, d)
-	case *node.Join:
-		doJoinUpdate(n, d)
-	case *node.Aggregate:
-		doAggregateUpdate(n, d)
-	}
-}
-
-// Drawing and user input.
-func doNodeUI(n *node.Node) {
-	switch d := n.Data.(type) {
-	case *node.Table:
-		doTableUI(n, d)
-	case *node.Filter:
-		doFilterUI(n, d)
-	case *node.PickColumns:
-		doPickColumnsUI(n, d)
-	case *node.CombineRows:
-		doCombineRowsUI(n, d)
-	case *node.Order:
-		doOrderUI(n, d)
-	case *node.Join:
-		doJoinUI(n, d)
-	case *node.Aggregate:
-		doAggregateUI(n, d)
-	}
-}
 
 const UIFieldHeight = 24
 const UIFieldSpacing = 4
 
-func getSchemaOfQueryContext(ctx *node.QueryContext) ([]string, error) {
+func getSchemaOfQueryContext(ctx *QueryContext) ([]string, error) {
 	srcToRun := ctx.SourceToSql(0)
 
 	rows, err := db.Query(srcToRun + " LIMIT 0")
@@ -63,21 +22,18 @@ func getSchemaOfQueryContext(ctx *node.QueryContext) ([]string, error) {
 	return rows.Columns()
 }
 
-func getSchema(n *node.Node) ([]string, error) {
-
-	ctx := node.NewQueryContextFromNode(n)
-
-	//ctx.Joins[0].Source.SourceAlias()
-
+func getSchema(n *Node) ([]string, error) {
+	ctx := NewQueryContextFromNode(n)
 	var colsToShow = make([]string, 0)
 
 	// ### Get CURRENT source rows ###
 
 	var currentSourceRows []string
 
+	// TODO figure out why we're grabbing 2x as many current ctx columns as needed
+
 	if len(ctx.Cols) == 0 {
 		currentSourceRows, _ = getSchemaOfQueryContext(ctx)
-		fmt.Println("Current schema alias is: " + ctx.SourceAlias())
 	} else {
 		currentSourceRows = ctx.Cols
 	}
@@ -90,7 +46,7 @@ func getSchema(n *node.Node) ([]string, error) {
 
 	for i, join := range ctx.Joins {
 		input := n.Inputs[i+1]
-		joinCols, _ := getSchemaOfQueryContext(node.NewQueryContextFromNode(input))
+		joinCols, _ := getSchemaOfQueryContext(NewQueryContextFromNode(input))
 		for _, col := range joinCols {
 			colsToShow = append(colsToShow, join.Alias + "." + col)
 		}
@@ -103,7 +59,7 @@ var errorOpts = []raygui.DropdownExOption{{"ERROR", "ERROR"}}
 
 // Gets dropdown options for the table produced by the given node.
 // Returns default options if no schema can be found.
-func columnNameDropdownOpts(inputNode *node.Node) []raygui.DropdownExOption {
+func columnNameDropdownOpts(inputNode *Node) []raygui.DropdownExOption {
 	if inputNode == nil {
 		return errorOpts
 	}
@@ -124,3 +80,4 @@ func columnNameDropdownOpts(inputNode *node.Node) []raygui.DropdownExOption {
 
 	return opts
 }
+

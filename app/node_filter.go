@@ -1,4 +1,4 @@
-package node
+package app
 
 import (
 	"github.com/bvisness/SQLJam/raygui"
@@ -21,4 +21,13 @@ func NewFilter() *Node {
 		Inputs:  make([]*Node, 1),
 		Data:    &Filter{},
 	}
+}
+
+func (d *Filter) Update(n *Node) {
+	n.UISize = rl.Vector2{360, 24}
+}
+
+func (d *Filter) DoUI(n *Node) {
+	rl.DrawRectangleRec(n.UIRect, rl.White)
+	d.Conditions = d.TextBox.Do(n.UIRect, d.Conditions, 100)
 }

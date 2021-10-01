@@ -1,19 +1,58 @@
 package app
 
 import (
-	"github.com/bvisness/SQLJam/node"
+	"log"
+
 	"github.com/bvisness/SQLJam/raygui"
 	rl "github.com/gen2brain/raylib-go/raylib"
-	"log"
 )
 
-func doTableUpdate(n *node.Node, t *node.Table) {
+type Table struct {
+	NodeData
+	SqlSource
+	Alias string
+	Table string
+
+	// UI data
+	TableDropdown raygui.DropdownEx
+}
+
+func NewTable() *Node {
+	return &Node{
+		Title:   "Table",
+		CanSnap: false,
+		Color:   rl.NewColor(242, 201, 76, 255),
+		Data: &Table{
+			TableDropdown: raygui.NewDropdownEx(),
+		},
+	}
+}
+
+func (t *Table) SourceToSql(indent int) string {
+	return t.Table
+}
+
+func (t *Table) SourceAlias() string {
+	return "a"
+}
+
+func (t *Table) IsPure() bool {
+	return true
+}
+
+func (t *Table) Update(n *Node) {
 	// init dropdown
 	if len(t.TableDropdown.GetOptions()) == 0 {
 		updateTableDropdown(&t.TableDropdown)
 	}
 
 	n.UISize = rl.Vector2{X: 200, Y: 24}
+}
+
+func (t *Table) DoUI(n *Node) {
+	if ival := t.TableDropdown.Do(n.UIRect); ival != nil {
+		t.Table = ival.(string)
+	}
 }
 
 func updateTableDropdown(dropdown *raygui.DropdownEx) {
@@ -55,10 +94,4 @@ func updateTableDropdown(dropdown *raygui.DropdownEx) {
 	}
 
 	dropdown.SetOptions(opts...)
-}
-
-func doTableUI(n *node.Node, t *node.Table) {
-	if ival := t.TableDropdown.Do(n.UIRect); ival != nil {
-		t.Table = ival.(string)
-	}
 }

@@ -5,7 +5,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/bvisness/SQLJam/node"
 	"github.com/bvisness/SQLJam/raygui"
 	rl "github.com/gen2brain/raylib-go/raylib"
 	_ "github.com/mattn/go-sqlite3"
@@ -14,7 +13,7 @@ import (
 const screenWidth = 1920
 const screenHeight = 1080
 
-var nodes []*node.Node
+var nodes []*Node
 var font rl.Font
 
 func Main() {
@@ -105,7 +104,7 @@ func doFrame() {
 	for _, n := range nodes {
 		n.UISize = rl.Vector2{}
 		n.InputPinHeights = nil
-		doNodeUpdate(n)
+		n.Update()
 	}
 
 	doLayout()
@@ -226,7 +225,7 @@ func doFrame() {
 				charSize := 25
 				lineHeight := charSize + 11
 				numLines := strings.Count(toDraw, "\n") + 1
-				drawBasicText(n.GenerateSql(), titleBarRect.X, SnapRoot(n).Pos.Y - float32(numLines * lineHeight), float32(charSize), rl.Black)
+				drawBasicText(n.GenerateSql(), titleBarRect.X, SnapRoot(n).Pos.Y-float32(numLines*lineHeight), float32(charSize), rl.Black)
 			}
 			if titleHover && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
 				if tryStartDrag(n, n.Pos) {
@@ -251,7 +250,7 @@ func doFrame() {
 				latestResult = doQuery(n.GenerateSql())
 			}
 
-			doNodeUI(n)
+			n.DoUI()
 		}
 	}
 	rl.EndMode2D()
@@ -280,7 +279,7 @@ func drawToolbar() {
 		Width:  100,
 		Height: float32(buttHeight),
 	}, "Add Table") {
-		table := node.NewTable()
+		table := NewTable()
 		table.Pos = rl.Vector2{400, 400}
 		nodes = append(nodes, table)
 	}
@@ -291,7 +290,7 @@ func drawToolbar() {
 		Width:  100,
 		Height: float32(buttHeight),
 	}, "Add Filter") {
-		filter := node.NewFilter()
+		filter := NewFilter()
 		filter.Pos = rl.Vector2{400, 400}
 		nodes = append(nodes, filter)
 	}
@@ -302,7 +301,7 @@ func drawToolbar() {
 		Width:  180,
 		Height: float32(buttHeight),
 	}, "Add Pick Columns") {
-		pc := node.NewPickColumns()
+		pc := NewPickColumns()
 		pc.Pos = rl.Vector2{400, 400}
 		nodes = append(nodes, pc)
 	}
@@ -313,7 +312,7 @@ func drawToolbar() {
 		Width:  180,
 		Height: float32(buttHeight),
 	}, "Add Combine Rows") {
-		cr := node.NewCombineRows(node.Union)
+		cr := NewCombineRows(Union)
 		cr.Pos = rl.Vector2{400, 400}
 		nodes = append(nodes, cr)
 	}
@@ -324,7 +323,7 @@ func drawToolbar() {
 		Width:  100,
 		Height: float32(buttHeight),
 	}, "Add Order") {
-		pc := node.NewOrder()
+		pc := NewOrder()
 		pc.Pos = rl.Vector2{400, 400}
 		nodes = append(nodes, pc)
 	}
@@ -335,7 +334,7 @@ func drawToolbar() {
 		Width:  100,
 		Height: float32(buttHeight),
 	}, "Add Join") {
-		pc := node.NewJoin()
+		pc := NewJoin()
 		pc.Pos = rl.Vector2{400, 400}
 		nodes = append(nodes, pc)
 	}
@@ -346,7 +345,7 @@ func drawToolbar() {
 		Width:  100,
 		Height: float32(buttHeight),
 	}, "Add Aggregate") {
-		pc := node.NewAggregate()
+		pc := NewAggregate()
 		pc.Pos = rl.Vector2{400, 400}
 		nodes = append(nodes, pc)
 	}
@@ -430,7 +429,7 @@ func doLayout() {
 
 	const pinDefaultSpacing = 36 // used if the node does not specify pin heights in update
 
-	basicLayout := func(n *node.Node) {
+	basicLayout := func(n *Node) {
 		n.Size = rl.Vector2{
 			float32(n.UISize.X + 2*uiPadding),
 			float32(titleBarHeight + uiPadding + int(n.UISize.Y) + uiPadding),
@@ -549,7 +548,7 @@ func doLayout() {
 	}
 }
 
-func trySnapNode(n *node.Node) {
+func trySnapNode(n *Node) {
 	if !n.CanSnap {
 		return
 	}
@@ -599,12 +598,12 @@ func nodeSortTop() int {
 	return topSortValue
 }
 
-func SnapRoot(n *node.Node) *node.Node {
+func SnapRoot(n *Node) *Node {
 	root, _ := SnapRootAndDistance(n)
 	return root
 }
 
-func SnapRootAndDistance(n *node.Node) (*node.Node, int) {
+func SnapRootAndDistance(n *Node) (*Node, int) {
 	distance := 0
 	root := n
 	for {
@@ -620,7 +619,7 @@ func SnapRootAndDistance(n *node.Node) (*node.Node, int) {
 }
 
 // this is not efficient, who cares
-func SnapLeaf(n *node.Node) *node.Node {
+func SnapLeaf(n *Node) *Node {
 	root := SnapRoot(n)
 
 	// The leaf is the node farthest from the snap root
@@ -637,7 +636,7 @@ func SnapLeaf(n *node.Node) *node.Node {
 	return leaf
 }
 
-func isSnappedUnder(a, b *node.Node) bool {
+func isSnappedUnder(a, b *Node) bool {
 	current := a
 	for current != nil {
 		if current == b {

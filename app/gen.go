@@ -1,9 +1,45 @@
-package node
+package app
 
 import (
 	"fmt"
 	"strings"
 )
+
+type SqlSource interface {
+	SourceToSql(indent int) string
+	SourceAlias() string
+	IsPure() bool
+}
+
+// QueryContext A context for node generation recursion.
+// Eventually, we can no longer add onto this query. Thus,
+// we continue recursive generation with a new Source context object.
+// Thus this is basically a recursive tree
+type QueryContext struct {
+	Alias  string
+	Source SqlSource // or NodeGenContext
+
+	// Picked columns and aggregates are mutually exclusive.
+	Cols      []string
+	ColAliases []string
+	Aggregate *GenAggregate
+
+	Combines         []GenCombine
+	Joins            []GenJoin
+	WhereConditions  []string
+	HavingConditions []string
+	Orders           []GenOrder
+}
+
+var _ SqlSource = &QueryContext{}
+
+func (ctx *QueryContext) SourceAlias() string {
+	return "a"
+}
+
+func (ctx *QueryContext) IsPure() bool {
+	return false
+}
 
 // NewQueryContext Creates an empty query context.
 func NewQueryContext() *QueryContext {
@@ -29,22 +65,37 @@ func WrapQueryContext(ctx *QueryContext) *QueryContext {
 	}
 }
 
+
+type GenAggregate struct {
+	GroupByCols []string
+	Aggs        []GenAggregateEntry
+}
+
+type GenAggregateEntry struct {
+	Type  AggregateType
+	Col   string
+	Alias string
+}
+
+type GenCombine struct {
+	Context *QueryContext
+	Type    CombineType
+}
+
+type GenOrder struct {
+	Col        string
+	Descending bool
+}
+
+type GenJoin struct {
+	Source    SqlSource
+	Condition string
+	Type      JoinType
+	Alias 	  string
+}
+
 func indented(s string, amount int) string {
 	return strings.Repeat("\t", amount) + s
-}
-
-//func GetQueryAliasedRows(ctx *QueryContext) []string {
-//
-//	ctx.SourceToSql(0)
-//
-//}
-
-func (ctx *QueryContext) IsPure() bool {
-	return false
-}
-
-func (ctx *QueryContext) SourceAlias() string {
-	return "a"
 }
 
 // SourceToSql Turns a context tree into an SQL statement string
@@ -71,11 +122,45 @@ func (ctx *QueryContext) SourceToSql(indent int) string {
 	} else {
 		sql += indented("SELECT ", indent)
 
-		if len(ctx.Cols) == 0 {
+		if len(ctx.Cols) > 0 && ctx.Aggregate != nil {
+			return indented("Error: Pick columns and aggregate on the same context", indent)
+		}
+
+		if ctx.Aggregate != nil {
+			var colStrings []string
+			for _, gbCol := range ctx.Aggregate.GroupByCols {
+				colStrings = append(colStrings, gbCol)
+			}
+			for _, agg := range ctx.Aggregate.Aggs {
+				op := "ERROR("
+				switch agg.Type {
+				case Avg:
+					op = "AVG("
+				case Max:
+					op = "MAX("
+				case Min:
+					op = "MIN("
+				case Sum:
+					op = "SUM("
+				case Count:
+					op = "COUNT("
+				case CountDistinct:
+					op = "COUNT(DISTINCT "
+				}
+
+				aliasStr := ""
+				if agg.Alias != "" {
+					aliasStr = fmt.Sprintf(" AS %s", agg.Alias)
+				}
+
+				colStrings = append(colStrings, fmt.Sprintf("%s%s)%s", op, agg.Col, aliasStr))
+			}
+			sql += strings.Join(colStrings, ", ")
+		} else if len(ctx.Cols) == 0 {
 			sql += "*"
 		} else {
 			colStrings := make([]string, len(ctx.Cols))
-			for i := range ctx.Cols {
+			for i, _ := range ctx.Cols {
 				aliasStr := ""
 				if ctx.ColAliases[i] != "" {
 					aliasStr = fmt.Sprintf(" AS %s", ctx.ColAliases[i])
@@ -113,10 +198,20 @@ func (ctx *QueryContext) SourceToSql(indent int) string {
 			}
 		}
 
-		if len(ctx.FilterConditions) > 0 && ctx.FilterConditions[0] != "" {
+		if len(ctx.WhereConditions) > 0 && ctx.WhereConditions[0] != "" {
 			sql += "\n" + indented("WHERE ", indent)
-			sql += strings.Join(ctx.FilterConditions, " AND ")
+			sql += strings.Join(ctx.WhereConditions, " AND ")
 		}
+	}
+
+	if ctx.Aggregate != nil && len(ctx.Aggregate.GroupByCols) > 0 {
+		sql += "\n" + indented("GROUP BY ", indent)
+		sql += strings.Join(ctx.Aggregate.GroupByCols, ", ")
+	}
+
+	if len(ctx.HavingConditions) > 0 {
+		sql += "\n" + indented("HAVING ", indent)
+		sql += strings.Join(ctx.HavingConditions, " AND ")
 	}
 
 	if len(ctx.Orders) > 0 {
@@ -146,20 +241,23 @@ func (ctx *QueryContext) CreateQuery(n *Node) *QueryContext {
 		ctx.Source = d
 	case *PickColumns:
 		ctx = ctx.CreateQuery(n.Inputs[0])
-		if len(ctx.Cols) > 0 {
+		if len(ctx.Cols) > 0 || ctx.Aggregate != nil {
 			ctx = WrapQueryContext(ctx)
 		}
 
 		ctx.Cols = d.Cols()
 		ctx.ColAliases = d.Aliases()
-		// ctx.Alias = d.Alias // TODO: ???????
 	case *Filter:
 		ctx = ctx.CreateQuery(n.Inputs[0])
 		if len(ctx.Cols) > 0 {
 			ctx = WrapQueryContext(ctx)
 		}
 
-		ctx.FilterConditions = append(ctx.FilterConditions, d.Conditions) // TODO: This should be split into multiple again? Right??
+		if ctx.Aggregate != nil {
+			ctx.HavingConditions = append(ctx.HavingConditions, d.Conditions)
+		} else {
+			ctx.WhereConditions = append(ctx.WhereConditions, d.Conditions)
+		}
 	case *Order:
 		ctx = ctx.CreateQuery(n.Inputs[0])
 		if len(ctx.Orders) > 0 {
@@ -202,7 +300,7 @@ func (ctx *QueryContext) CreateQuery(n *Node) *QueryContext {
 			// All other inputs get thrown into a new recursive context
 			for i, input := range n.Inputs[1:] {
 				if input != nil {
-					aliasChar := string('b'+i)
+					aliasChar := string(rune('b' + i))
 					cond := d.Conditions[i]
 					var source *QueryContext
 					if table, ok := input.Data.(*Table); ok {
@@ -222,8 +320,31 @@ func (ctx *QueryContext) CreateQuery(n *Node) *QueryContext {
 				}
 			}
 		}
+	case *Aggregate:
+		ctx = ctx.CreateQuery(n.Inputs[0])
+		if len(ctx.Cols) > 0 || ctx.Aggregate != nil {
+			ctx = WrapQueryContext(ctx)
+		}
 
-		ctx.Operations += 1
+		groupByCols := make([]string, len(d.GroupBys))
+		for i, gb := range d.GroupBys {
+			groupByCols[i] = gb.Col
+		}
+
+		aggs := make([]GenAggregateEntry, len(d.Aggregates))
+		for i, agg := range d.Aggregates {
+			aggs[i] = GenAggregateEntry{
+				Type:  agg.Type,
+				Col:   agg.Col,
+				Alias: agg.Alias,
+			}
+		}
+
+		ctx.Aggregate = &GenAggregate{
+			GroupByCols: groupByCols,
+			Aggs:        aggs,
+		}
+
 	}
 
 	return ctx
