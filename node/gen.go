@@ -76,14 +76,11 @@ func (ctx *QueryContext) SourceToSql() string {
 				sql += fmt.Sprintf(" FROM (%s)", ctx.Source.SourceToSql())
 			}
 
-			// Currently only shows alias if it's not empty
-			if ctx.Source.SourceAlias() != "" {
-				sql += fmt.Sprintf(" AS %s", ctx.Alias)
-			}
+			sql += " AS a"
 		}
 
 		for _, join := range ctx.Joins {
-			sql += fmt.Sprintf(" %s (%s) ON %s", join.Type.String(), join.Source.SourceToSql(), join.Condition)
+			sql += fmt.Sprintf(" %s (%s) AS %s ON %s", join.Type.String(), join.Source.SourceToSql(), join.Source.SourceAlias(), join.Condition)
 		}
 
 		if len(ctx.FilterConditions) > 0 && ctx.FilterConditions[0] != "" {
@@ -176,12 +173,16 @@ func (ctx *QueryContext) CreateQuery(n *Node) *QueryContext {
 			// All other inputs get thrown into a new recursive context
 			for i, input := range n.Inputs[1:] {
 				if input != nil {
+					aliasChar := string('b'+i)
 					cond := d.Conditions[i]
 					var source SqlSource
 					if table, ok := input.Data.(*Table); ok {
+						table.Alias = aliasChar
 						source = table
 					} else {
-						source = NewQueryContextFromNode(input)
+						newQuery := NewQueryContextFromNode(input)
+						newQuery.Alias = aliasChar
+						source = newQuery
 					}
 					ctx.Joins = append(ctx.Joins, GenJoin{
 						Source:    source,
