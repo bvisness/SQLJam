@@ -5,6 +5,18 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
+type Join struct {
+	NodeData
+	Conditions []*JoinCondition
+}
+
+type JoinCondition struct {
+	Condition string
+	Left      bool
+	Right     bool
+	TextBox   raygui.TextBoxEx
+}
+
 type JoinType int
 
 const (
@@ -14,26 +26,16 @@ const (
 	OuterJoin
 )
 
-func (jt JoinType) String() string {
-	switch jt {
-	case LeftJoin:
-		return "LEFT JOIN"
-	case RightJoin:
-		return "RIGHT JOIN"
-	case InnerJoin:
-		return "JOIN"
-	case OuterJoin:
-		return "OUTER JOIN"
-	default:
-		return "BAD JOIN"
+func NewJoin() *Node {
+	return &Node{
+		Title:   "Join",
+		CanSnap: false,
+		Color:   rl.NewColor(102, 187, 106, 255),
+		Inputs:  make([]*Node, 2),
+		Data: &Join{
+			Conditions: []*JoinCondition{{}},
+		},
 	}
-}
-
-type JoinCondition struct {
-	Condition string
-	Left      bool
-	Right     bool
-	TextBox   raygui.TextBoxEx
 }
 
 func (jc *JoinCondition) Type() JoinType {
@@ -48,19 +50,17 @@ func (jc *JoinCondition) Type() JoinType {
 	}
 }
 
-type Join struct {
-	NodeData
-	Conditions []*JoinCondition
-}
-
-func NewJoin() *Node {
-	return &Node{
-		Title:   "Join",
-		CanSnap: false,
-		Color:   rl.NewColor(102, 187, 106, 255),
-		Inputs:  make([]*Node, 2),
-		Data: &Join{
-			Conditions: []*JoinCondition{{}},
-		},
+func (jt JoinType) String() string {
+	switch jt {
+	case LeftJoin:
+		return "LEFT JOIN"
+	case RightJoin:
+		return "RIGHT JOIN"
+	case InnerJoin:
+		return "JOIN"
+	case OuterJoin:
+		return "OUTER JOIN"
+	default:
+		return "BAD JOIN"
 	}
 }

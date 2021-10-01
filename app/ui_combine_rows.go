@@ -6,16 +6,16 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
-func doCombineRowsUpdate(n *node.Node, c *node.CombineRows) {
-	n.UISize = rl.Vector2{X: 200, Y: float32(48)}
-	c.Dropdown.SetOptions(combineRowsOpts...)
-}
-
 var combineRowsOpts = []raygui.DropdownExOption{
 	{"UNION", node.Union},
 	{"UNION ALL", node.UnionAll},
 	{"INTERSECT", node.Intersect},
 	{"EXCEPT", node.Except},
+}
+
+func doCombineRowsUpdate(n *node.Node, c *node.CombineRows) {
+	n.UISize = rl.Vector2{X: 200, Y: float32(48)}
+	c.Dropdown.SetOptions(combineRowsOpts...)
 }
 
 func doCombineRowsUI(n *node.Node, d *node.CombineRows) {

@@ -18,20 +18,14 @@ func doOrderUpdate(n *node.Node, o *node.Order) {
 
 	n.UISize = rl.Vector2{300, float32(uiHeight)}
 
-	// This will obliterate existing selections on resize,
-	// but this shouldn't happen anyway if we're resizing correctly.
-	if len(o.Cols) != len(o.ColDropdowns) {
-		o.ColDropdowns = make([]*raygui.DropdownEx, len(o.Cols))
-	}
-
 	opts := columnNameDropdownOpts(n.Inputs[0])
-	for _, dropdown := range o.ColDropdowns {
-		dropdown.SetOptions(opts...)
+	for _, col := range o.Cols {
+		col.ColDropdown.SetOptions(opts...)
 	}
 }
 
 func doOrderUI(n *node.Node, o *node.Order) {
-	openDropdown, isOpen := raygui.GetOpenDropdown(o.ColDropdowns)
+	openDropdown, isOpen := raygui.GetOpenDropdown(o.ColDropdowns())
 	if isOpen {
 		raygui.Disable()
 		defer raygui.Enable()
@@ -46,8 +40,7 @@ func doOrderUI(n *node.Node, o *node.Order) {
 		n.UIRect.Width/2 - UIFieldSpacing/2,
 		UIFieldHeight,
 	}, "+") {
-		o.Cols = append(o.Cols, node.OrderColumn{})
-		o.ColDropdowns = append(o.ColDropdowns, &raygui.DropdownEx{})
+		o.Cols = append(o.Cols, &node.OrderColumn{})
 	}
 	if raygui.Button(rl.Rectangle{
 		n.UIRect.X + n.UIRect.Width/2 + UIFieldSpacing/2,
@@ -57,16 +50,17 @@ func doOrderUI(n *node.Node, o *node.Order) {
 	}, "-") {
 		if len(o.Cols) > 1 {
 			o.Cols = o.Cols[:len(o.Cols)-1]
-			o.ColDropdowns = o.ColDropdowns[:len(o.ColDropdowns)-1]
 		}
 	}
 
-	for i := len(o.ColDropdowns) - 1; i >= 0; i-- {
-		fieldY -= UIFieldSpacing + UIFieldHeight
+	for i := len(o.Cols) - 1; i >= 0; i-- {
 		func() {
-			col := &o.Cols[i]
-			dropdown := o.ColDropdowns[i]
-			if openDropdown == dropdown {
+			fieldY -= UIFieldSpacing + UIFieldHeight
+
+			col := o.Cols[i]
+			dropdown := &col.ColDropdown
+
+			if openDropdown == &col.ColDropdown {
 				raygui.Enable()
 				defer raygui.Disable()
 			}

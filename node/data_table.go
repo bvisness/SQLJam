@@ -15,16 +15,6 @@ type Table struct {
 	TableDropdown raygui.DropdownEx
 }
 
-
-func (t *Table) SourceToSql(indent int) string {
-	return t.Table
-}
-
-func (t *Table) SourceAlias() string {
-	return t.Alias
-}
-
-
 func NewTable() *Node {
 	return &Node{
 		Title:   "Table",
@@ -34,4 +24,12 @@ func NewTable() *Node {
 			TableDropdown: raygui.NewDropdownEx(),
 		},
 	}
+}
+
+func (t *Table) SourceToSql(indent int) string {
+	return t.Table
+}
+
+func (t *Table) SourceAlias() string {
+	return t.Alias
 }

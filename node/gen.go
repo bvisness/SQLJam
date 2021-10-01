@@ -191,7 +191,7 @@ func (ctx *QueryContext) CreateQuery(n *Node) *QueryContext {
 			// All other inputs get thrown into a new recursive context
 			for i, input := range n.Inputs[1:] {
 				if input != nil {
-					aliasChar := string('b'+i)
+					aliasChar := string(rune('b' + i))
 					cond := d.Conditions[i]
 					var source SqlSource
 					if table, ok := input.Data.(*Table); ok {

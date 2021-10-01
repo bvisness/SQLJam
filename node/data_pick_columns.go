@@ -20,6 +20,18 @@ type PickColumnsEntry struct {
 	AliasTextbox raygui.TextBoxEx
 }
 
+func NewPickColumns() *Node {
+	return &Node{
+		Title:   "Pick Columns",
+		CanSnap: true,
+		Color:   rl.NewColor(244, 143, 177, 255),
+		Inputs:  make([]*Node, 1),
+		Data: &PickColumns{
+			Entries: []*PickColumnsEntry{{}},
+		},
+	}
+}
+
 func (pc *PickColumns) SourceAlias() string {
 	return pc.Alias
 }
@@ -46,16 +58,4 @@ func (pc *PickColumns) ColDropdowns() []*raygui.DropdownEx {
 		res[i] = &pc.Entries[i].ColDropdown
 	}
 	return res
-}
-
-func NewPickColumns() *Node {
-	return &Node{
-		Title:   "Pick Columns",
-		CanSnap: true,
-		Color:   rl.NewColor(244, 143, 177, 255),
-		Inputs:  make([]*Node, 1),
-		Data: &PickColumns{
-			Entries: []*PickColumnsEntry{{}},
-		},
-	}
 }

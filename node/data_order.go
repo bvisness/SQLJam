@@ -9,14 +9,13 @@ type Order struct {
 	NodeData
 
 	Alias string
-	Cols  []OrderColumn
-
-	ColDropdowns []*raygui.DropdownEx
+	Cols  []*OrderColumn
 }
 
 type OrderColumn struct {
-	Col        string
-	Descending bool
+	Col         string
+	Descending  bool
+	ColDropdown raygui.DropdownEx
 }
 
 func NewOrder() *Node {
@@ -26,8 +25,15 @@ func NewOrder() *Node {
 		Color:   rl.NewColor(255, 204, 128, 255),
 		Inputs:  make([]*Node, 1),
 		Data: &Order{
-			Cols:         make([]OrderColumn, 1),
-			ColDropdowns: raygui.MakeDropdownExList(1),
+			Cols: []*OrderColumn{{}},
 		},
 	}
+}
+
+func (oc *Order) ColDropdowns() []*raygui.DropdownEx {
+	res := make([]*raygui.DropdownEx, len(oc.Cols))
+	for i := range res {
+		res[i] = &oc.Cols[i].ColDropdown
+	}
+	return res
 }

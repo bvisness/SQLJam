@@ -5,6 +5,12 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
+type CombineRows struct {
+	NodeData
+	CombinationType CombineType
+	Dropdown        raygui.DropdownEx
+}
+
 type CombineType int
 
 const (
@@ -13,12 +19,6 @@ const (
 	Intersect
 	Except
 )
-
-type CombineRows struct {
-	NodeData
-	CombinationType CombineType
-	Dropdown        raygui.DropdownEx
-}
 
 func NewCombineRows(combineType CombineType) *Node {
 	return &Node{

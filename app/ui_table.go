@@ -1,10 +1,11 @@
 package app
 
 import (
+	"log"
+
 	"github.com/bvisness/SQLJam/node"
 	"github.com/bvisness/SQLJam/raygui"
 	rl "github.com/gen2brain/raylib-go/raylib"
-	"log"
 )
 
 func doTableUpdate(n *node.Node, t *node.Table) {
@@ -14,6 +15,12 @@ func doTableUpdate(n *node.Node, t *node.Table) {
 	}
 
 	n.UISize = rl.Vector2{X: 200, Y: 24}
+}
+
+func doTableUI(n *node.Node, t *node.Table) {
+	if ival := t.TableDropdown.Do(n.UIRect); ival != nil {
+		t.Table = ival.(string)
+	}
 }
 
 func updateTableDropdown(dropdown *raygui.DropdownEx) {
@@ -55,10 +62,4 @@ func updateTableDropdown(dropdown *raygui.DropdownEx) {
 	}
 
 	dropdown.SetOptions(opts...)
-}
-
-func doTableUI(n *node.Node, t *node.Table) {
-	if ival := t.TableDropdown.Do(n.UIRect); ival != nil {
-		t.Table = ival.(string)
-	}
 }
