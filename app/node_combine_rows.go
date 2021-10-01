@@ -1,4 +1,4 @@
-package node
+package app
 
 import (
 	"github.com/bvisness/SQLJam/raygui"
@@ -30,4 +30,21 @@ func NewCombineRows(combineType CombineType) *Node {
 			CombinationType: combineType,
 		},
 	}
+}
+
+var combineRowsOpts = []raygui.DropdownExOption{
+	{"UNION", Union},
+	{"UNION ALL", UnionAll},
+	{"INTERSECT", Intersect},
+	{"EXCEPT", Except},
+}
+
+func (d *CombineRows) Update(n *Node) {
+	n.UISize = rl.Vector2{X: 200, Y: float32(48)}
+	d.Dropdown.SetOptions(combineRowsOpts...)
+}
+
+func (d *CombineRows) DoUI(n *Node) {
+	chosen := d.Dropdown.Do(n.UIRect)
+	d.CombinationType = chosen.(CombineType)
 }

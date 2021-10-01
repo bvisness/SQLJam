@@ -6,6 +6,11 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
+/*
+MODIFIED: Everything in this file is new functionality that is not present in
+base raygui.
+*/
+
 var cam *rl.Camera2D
 
 func Set2DCamera(camera *rl.Camera2D) {

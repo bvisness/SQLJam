@@ -1,12 +1,66 @@
 package app
 
 import (
-	"github.com/bvisness/SQLJam/node"
 	"github.com/bvisness/SQLJam/raygui"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
-func doPickColumnsUpdate(n *node.Node, p *node.PickColumns) {
+type PickColumns struct {
+	NodeData
+	SqlSource
+	Alias string
+
+	Entries []*PickColumnsEntry
+}
+
+type PickColumnsEntry struct {
+	Col          string
+	ColDropdown  raygui.DropdownEx
+	Alias        string
+	AliasTextbox raygui.TextBoxEx
+}
+
+func NewPickColumns() *Node {
+	return &Node{
+		Title:   "Pick Columns",
+		CanSnap: true,
+		Color:   rl.NewColor(244, 143, 177, 255),
+		Inputs:  make([]*Node, 1),
+		Data: &PickColumns{
+			Entries: []*PickColumnsEntry{{}},
+		},
+	}
+}
+
+func (pc *PickColumns) SourceAlias() string {
+	return pc.Alias
+}
+
+func (pc *PickColumns) Cols() []string {
+	res := make([]string, len(pc.Entries))
+	for i := range res {
+		res[i] = pc.Entries[i].Col
+	}
+	return res
+}
+
+func (pc *PickColumns) Aliases() []string {
+	res := make([]string, len(pc.Entries))
+	for i := range res {
+		res[i] = pc.Entries[i].Alias
+	}
+	return res
+}
+
+func (pc *PickColumns) ColDropdowns() []*raygui.DropdownEx {
+	res := make([]*raygui.DropdownEx, len(pc.Entries))
+	for i := range res {
+		res[i] = &pc.Entries[i].ColDropdown
+	}
+	return res
+}
+
+func (p *PickColumns) Update(n *Node) {
 	uiHeight := 0
 	for range p.Entries {
 		uiHeight += UIFieldHeight
@@ -22,7 +76,7 @@ func doPickColumnsUpdate(n *node.Node, p *node.PickColumns) {
 	}
 }
 
-func doPickColumnsUI(n *node.Node, p *node.PickColumns) {
+func (p *PickColumns) DoUI(n *Node) {
 	openDropdown, isOpen := raygui.GetOpenDropdown(p.ColDropdowns())
 	if isOpen {
 		raygui.Disable()
@@ -38,7 +92,7 @@ func doPickColumnsUI(n *node.Node, p *node.PickColumns) {
 		n.UIRect.Width/2 - UIFieldSpacing/2,
 		UIFieldHeight,
 	}, "+") {
-		p.Entries = append(p.Entries, &node.PickColumnsEntry{})
+		p.Entries = append(p.Entries, &PickColumnsEntry{})
 	}
 	if raygui.Button(rl.Rectangle{
 		n.UIRect.X + n.UIRect.Width/2 + UIFieldSpacing/2,

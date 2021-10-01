@@ -3,7 +3,6 @@ package app
 import (
 	"fmt"
 
-	"github.com/bvisness/SQLJam/node"
 	"github.com/bvisness/SQLJam/raygui"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
@@ -85,9 +84,9 @@ func dragState(key interface{}) (matchesKey bool, done bool, canceled bool) {
 
 const wireDragKey = "NEW_WIRE"
 
-var wireDragOutputNode *node.Node
+var wireDragOutputNode *Node
 
-func tryDragNewWire(outputNode *node.Node) {
+func tryDragNewWire(outputNode *Node) {
 	if outputNode == nil {
 		return
 	}
@@ -100,7 +99,7 @@ func draggingWire() bool {
 	return dragging && dragKey == wireDragKey
 }
 
-func didDropWire() (*node.Node, bool) {
+func didDropWire() (*Node, bool) {
 	matchesKey, done, canceled := dragState(wireDragKey)
 	if !matchesKey {
 		return nil, false

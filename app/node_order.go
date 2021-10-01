@@ -1,16 +1,48 @@
 package app
 
 import (
-	"github.com/bvisness/SQLJam/node"
 	"github.com/bvisness/SQLJam/raygui"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 const orderDirectionWidth = 40
 
-func doOrderUpdate(n *node.Node, o *node.Order) {
+type Order struct {
+	NodeData
+
+	Alias string
+	Cols  []*OrderColumn
+}
+
+type OrderColumn struct {
+	Col         string
+	Descending  bool
+	ColDropdown raygui.DropdownEx
+}
+
+func NewOrder() *Node {
+	return &Node{
+		Title:   "Order",
+		CanSnap: true,
+		Color:   rl.NewColor(255, 204, 128, 255),
+		Inputs:  make([]*Node, 1),
+		Data: &Order{
+			Cols: []*OrderColumn{{}},
+		},
+	}
+}
+
+func (oc *Order) ColDropdowns() []*raygui.DropdownEx {
+	res := make([]*raygui.DropdownEx, len(oc.Cols))
+	for i := range res {
+		res[i] = &oc.Cols[i].ColDropdown
+	}
+	return res
+}
+
+func (d *Order) Update(n *Node) {
 	uiHeight := 0
-	for range o.Cols {
+	for range d.Cols {
 		uiHeight += UIFieldHeight
 		uiHeight += UIFieldSpacing
 	}
@@ -19,13 +51,13 @@ func doOrderUpdate(n *node.Node, o *node.Order) {
 	n.UISize = rl.Vector2{300, float32(uiHeight)}
 
 	opts := columnNameDropdownOpts(n.Inputs[0])
-	for _, col := range o.Cols {
+	for _, col := range d.Cols {
 		col.ColDropdown.SetOptions(opts...)
 	}
 }
 
-func doOrderUI(n *node.Node, o *node.Order) {
-	openDropdown, isOpen := raygui.GetOpenDropdown(o.ColDropdowns())
+func (d *Order) DoUI(n *Node) {
+	openDropdown, isOpen := raygui.GetOpenDropdown(d.ColDropdowns())
 	if isOpen {
 		raygui.Disable()
 		defer raygui.Enable()
@@ -40,7 +72,7 @@ func doOrderUI(n *node.Node, o *node.Order) {
 		n.UIRect.Width/2 - UIFieldSpacing/2,
 		UIFieldHeight,
 	}, "+") {
-		o.Cols = append(o.Cols, &node.OrderColumn{})
+		d.Cols = append(d.Cols, &OrderColumn{})
 	}
 	if raygui.Button(rl.Rectangle{
 		n.UIRect.X + n.UIRect.Width/2 + UIFieldSpacing/2,
@@ -48,16 +80,16 @@ func doOrderUI(n *node.Node, o *node.Order) {
 		n.UIRect.Width/2 - UIFieldSpacing/2,
 		UIFieldHeight,
 	}, "-") {
-		if len(o.Cols) > 1 {
-			o.Cols = o.Cols[:len(o.Cols)-1]
+		if len(d.Cols) > 1 {
+			d.Cols = d.Cols[:len(d.Cols)-1]
 		}
 	}
 
-	for i := len(o.Cols) - 1; i >= 0; i-- {
+	for i := len(d.Cols) - 1; i >= 0; i-- {
 		func() {
 			fieldY -= UIFieldSpacing + UIFieldHeight
 
-			col := o.Cols[i]
+			col := d.Cols[i]
 			dropdown := &col.ColDropdown
 
 			if openDropdown == &col.ColDropdown {
