@@ -53,7 +53,7 @@ func drawBasicText(text string, x float32, y float32, size float32, color rl.Col
 }
 
 func doFrame() {
-	raygui.Set2DCamera(&cam)
+	raygui.Set2DCamera(nil)
 
 	rl.BeginDrawing()
 	defer rl.EndDrawing()
@@ -62,16 +62,40 @@ func doFrame() {
 
 	updateDrag()
 
-	// Move camera
-	if rl.IsMouseButtonDown(rl.MouseMiddleButton) {
-		mousePos := rl.GetMousePosition()
-		if rl.IsMouseButtonPressed(rl.MouseMiddleButton) {
-			panMouseStart = mousePos
-			panCamStart = cam.Target
-		}
+	// Pan/zoom camera
+	{
+		const minZoom = 0.2
+		const maxZoom = 4
 
-		mouseDelta := rl.Vector2Subtract(mousePos, panMouseStart)
-		cam.Target = rl.Vector2Subtract(panCamStart, mouseDelta) // camera moves opposite of mouse
+		zoomBefore := cam.Zoom
+		zoomFactor := float32(rl.GetMouseWheelMove()) / 10
+		cam.Zoom *= 1 + zoomFactor
+		if cam.Zoom < minZoom {
+			cam.Zoom = minZoom
+		}
+		if cam.Zoom > maxZoom {
+			cam.Zoom = maxZoom
+		}
+		zoomAfter := cam.Zoom
+		actualZoomFactor := zoomAfter/zoomBefore - 1
+
+		mouseWorld := rl.GetScreenToWorld2D(raygui.GetMousePositionWorld(), cam)
+		cam2mouse := rl.Vector2Subtract(mouseWorld, cam.Target)
+		cam.Target = rl.Vector2Add(cam.Target, rl.Vector2Multiply(cam2mouse, rl.Vector2{actualZoomFactor, actualZoomFactor}))
+
+		// TODO: Find a nice way of returning us to exactly 100% zoom.
+		// But also supporting smooth trackpad zoom...?
+
+		if rl.IsMouseButtonDown(rl.MouseMiddleButton) {
+			mousePos := raygui.GetMousePositionWorld()
+			if rl.IsMouseButtonPressed(rl.MouseMiddleButton) {
+				panMouseStart = mousePos
+				panCamStart = cam.Target
+			}
+
+			mouseDelta := rl.Vector2DivideV(rl.Vector2Subtract(mousePos, panMouseStart), rl.Vector2{cam.Zoom, cam.Zoom})
+			cam.Target = rl.Vector2Subtract(panCamStart, mouseDelta) // camera moves opposite of mouse
+		}
 	}
 
 	// update nodes
@@ -81,6 +105,7 @@ func doFrame() {
 
 	doLayout()
 
+	raygui.Set2DCamera(&cam)
 	rl.BeginMode2D(cam)
 	{
 		sort.SliceStable(nodes, func(i, j int) bool {
@@ -123,7 +148,7 @@ func doFrame() {
 		}
 
 		if draggingWire() {
-			rl.DrawLineBezier(wireDragOutputNode.OutputPinPos, rl.GetMousePosition(), 2, rl.Black)
+			rl.DrawLineBezier(wireDragOutputNode.OutputPinPos, raygui.GetMousePositionWorld(), 2, rl.Black)
 		}
 
 		const pinSize = 12
@@ -167,7 +192,7 @@ func doFrame() {
 					continue
 				}
 
-				isHoverPin := CheckCollisionPointRec2D(rl.GetMousePosition(), getPinRect(pinPos, false))
+				isHoverPin := rl.CheckCollisionPointRec(raygui.GetMousePositionWorld(), getPinRect(pinPos, false))
 
 				pinColor := rl.Black
 				if isHoverPin {
@@ -186,12 +211,12 @@ func doFrame() {
 			}
 			if !n.HasChildren {
 				rl.DrawRectangleRec(getPinRect(n.OutputPinPos, true), rl.Black)
-				if CheckCollisionPointRec2D(rl.GetMousePosition(), getPinRect(n.OutputPinPos, true)) && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
+				if rl.CheckCollisionPointRec(raygui.GetMousePositionWorld(), getPinRect(n.OutputPinPos, true)) && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
 					tryDragNewWire(n)
 				}
 			}
 
-			titleHover := CheckCollisionPointRec2D(rl.GetMousePosition(), titleBarRect)
+			titleHover := rl.CheckCollisionPointRec(raygui.GetMousePositionWorld(), titleBarRect)
 			if titleHover {
 				drawBasicText(n.GenerateSql(), titleBarRect.X, SnapRoot(n).Pos.Y-22, 20, rl.Black)
 			}
@@ -213,7 +238,7 @@ func doFrame() {
 				}
 			}
 
-			previewHover := CheckCollisionPointRec2D(rl.GetMousePosition(), previewRect)
+			previewHover := rl.CheckCollisionPointRec(raygui.GetMousePositionWorld(), previewRect)
 			if previewHover && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
 				latestResult = doQuery(n.GenerateSql())
 			}
@@ -222,6 +247,7 @@ func doFrame() {
 		}
 	}
 	rl.EndMode2D()
+	raygui.Set2DCamera(nil)
 
 	drawToolbar()
 }
@@ -355,16 +381,6 @@ func displayLastResults() {
 			drawBasicText(fmt.Sprintf("and %d more...", len(latestResult.Rows)-maxRows), rowPos.X, rowPos.Y, 20, rl.Black)
 		}
 	}
-}
-
-func CheckCollisionPointRec2D(point rl.Vector2, rec rl.Rectangle) bool {
-	screenRec := rl.Rectangle{
-		X:      rec.X - (cam.Target.X - cam.Offset.X),
-		Y:      rec.Y - (cam.Target.Y - cam.Offset.Y),
-		Width:  rec.Width,
-		Height: rec.Height,
-	}
-	return rl.CheckCollisionPointRec(point, screenRec)
 }
 
 func RoundnessPx(rect rl.Rectangle, radiusPx float32) float32 {
@@ -518,7 +534,7 @@ func trySnapNode(n *node.Node) {
 			continue
 		}
 
-		if CheckCollisionPointRec2D(rl.GetMousePosition(), other.SnapTargetRect) {
+		if rl.CheckCollisionPointRec(raygui.GetMousePositionWorld(), other.SnapTargetRect) {
 			// See snapping.png.
 			// INVARIANT: Nodes must always be pointing at the leaves of stacks.
 

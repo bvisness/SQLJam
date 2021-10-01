@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/bvisness/SQLJam/node"
+	"github.com/bvisness/SQLJam/raygui"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
@@ -46,7 +47,7 @@ func tryStartDrag(key interface{}, objStart rl.Vector2) bool {
 	dragging = true
 	dragCanceled = false
 	dragKey = getDragKey(key)
-	dragMouseStart = rl.GetMousePosition()
+	dragMouseStart = raygui.GetMousePositionWorld()
 	dragObjStart = objStart
 
 	return true
@@ -56,7 +57,7 @@ func dragOffset() rl.Vector2 {
 	if !dragging && dragKey == "" {
 		return rl.Vector2{}
 	}
-	return rl.Vector2Subtract(rl.GetMousePosition(), dragMouseStart)
+	return rl.Vector2Subtract(raygui.GetMousePositionWorld(), dragMouseStart)
 }
 
 func dragNewPosition() rl.Vector2 {
