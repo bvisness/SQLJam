@@ -21,9 +21,12 @@ func (t *Table) SourceToSql(indent int) string {
 }
 
 func (t *Table) SourceAlias() string {
-	return t.Alias
+	return "a"
 }
 
+func (t *Table) IsPure() bool {
+	return true
+}
 
 func NewTable() *Node {
 	return &Node{
@@ -32,6 +35,7 @@ func NewTable() *Node {
 		Color:   rl.NewColor(242, 201, 76, 255),
 		Data: &Table{
 			TableDropdown: raygui.NewDropdownEx(),
+			Alias: "a",
 		},
 	}
 }

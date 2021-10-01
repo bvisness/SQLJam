@@ -7,6 +7,7 @@ type NodeData interface {
 type SqlSource interface {
 	SourceToSql(indent int) string
 	SourceAlias() string
+	IsPure() bool
 }
 
 type GenCombine struct {
@@ -23,6 +24,7 @@ type GenJoin struct {
 	Source    SqlSource
 	Condition string
 	Type      JoinType
+	Alias 	  string
 }
 
 // A context for node generation recursion.
@@ -31,7 +33,7 @@ type GenJoin struct {
 // Thus this is basically a recursive tree
 
 type QueryContext struct {
-	Alias      string
+	Operations int
 	Cols       []string
 	ColAliases []string
 	Source     SqlSource // or NodeGenContext
@@ -44,8 +46,4 @@ type QueryContext struct {
 	Orders []GenOrder
 }
 
-var _ SqlSource = &QueryContext{}
-
-func (ctx *QueryContext) SourceAlias() string {
-	return ctx.Alias
-}
+//var _ SqlSource = &QueryContext{}

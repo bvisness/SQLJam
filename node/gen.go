@@ -29,8 +29,22 @@ func WrapQueryContext(ctx *QueryContext) *QueryContext {
 	}
 }
 
-func Indented(s string, amount int) string {
+func indented(s string, amount int) string {
 	return strings.Repeat("\t", amount) + s
+}
+
+//func GetQueryAliasedRows(ctx *QueryContext) []string {
+//
+//	ctx.SourceToSql(0)
+//
+//}
+
+func (ctx *QueryContext) IsPure() bool {
+	return false
+}
+
+func (ctx *QueryContext) SourceAlias() string {
+	return "a"
 }
 
 // SourceToSql Turns a context tree into an SQL statement string
@@ -51,11 +65,11 @@ func (ctx *QueryContext) SourceToSql(indent int) string {
 			case UnionAll:
 				used = "UNION ALL"
 			}
-			sql += "\n" + Indented(used, indent)
+			sql += "\n" + indented(used, indent)
 			sql += "\n" + gc.Context.SourceToSql(indent) + "\n"
 		}
 	} else {
-		sql += Indented("SELECT ", indent)
+		sql += indented("SELECT ", indent)
 
 		if len(ctx.Cols) == 0 {
 			sql += "*"
@@ -72,43 +86,41 @@ func (ctx *QueryContext) SourceToSql(indent int) string {
 		}
 
 		if ctx.Source == nil {
-			return Indented("Error: No SQL Source", indent)
+			return indented("Error: No SQL Source", indent)
 		} else {
-			sql += "\n" + Indented("", indent)
-			switch ctx.Source.(type) {
-			case *Table:
+			sql += "\n" + indented("", indent)
+			if ctx.Source.IsPure() {
 				sql += fmt.Sprintf("FROM %s", ctx.Source.SourceToSql(0))
-			default:
+			}else {
 				sql += fmt.Sprintf("FROM (\n%s", ctx.Source.SourceToSql(indent + 1))
-				sql += "\n" + Indented(")", indent)
+				sql += "\n" + indented(")", indent)
 			}
-
-			sql += " AS a"
+			sql += " AS " + ctx.Source.SourceAlias()
 		}
 
+		// JOIN
 		for _, join := range ctx.Joins {
-			sql += "\n" + Indented(join.Type.String(), indent) + " "
-			switch join.Source.(type) {
-			case *Table:
+			sql += "\n" + indented(join.Type.String(), indent) + " "
+			if join.Source.IsPure() {
 				sql += join.Source.SourceToSql(indent)
-			default:
+			} else {
 				sql += "(\n" + join.Source.SourceToSql(indent + 1)
-				sql += "\n" + Indented(")", indent)
+				sql += "\n" + indented(")", indent)
 			}
-			sql += fmt.Sprintf(" AS %s", join.Source.SourceAlias())
+			sql += fmt.Sprintf(" AS %s", join.Alias)
 			if join.Condition != "" {
 				sql += fmt.Sprintf(" ON %s", join.Condition)
 			}
 		}
 
 		if len(ctx.FilterConditions) > 0 && ctx.FilterConditions[0] != "" {
-			sql += "\n" + Indented("WHERE ", indent)
+			sql += "\n" + indented("WHERE ", indent)
 			sql += strings.Join(ctx.FilterConditions, " AND ")
 		}
 	}
 
 	if len(ctx.Orders) > 0 {
-		sql += Indented("\nORDER BY ", indent)
+		sql += indented("\nORDER BY ", indent)
 		var orderStrings []string
 		for _, order := range ctx.Orders {
 			direction := ""
@@ -132,7 +144,6 @@ func (ctx *QueryContext) CreateQuery(n *Node) *QueryContext {
 	switch d := n.Data.(type) {
 	case *Table:
 		ctx.Source = d
-		ctx.Alias = d.Alias
 	case *PickColumns:
 		ctx = ctx.CreateQuery(n.Inputs[0])
 		if len(ctx.Cols) > 0 {
@@ -193,23 +204,26 @@ func (ctx *QueryContext) CreateQuery(n *Node) *QueryContext {
 				if input != nil {
 					aliasChar := string('b'+i)
 					cond := d.Conditions[i]
-					var source SqlSource
+					var source *QueryContext
 					if table, ok := input.Data.(*Table); ok {
 						table.Alias = aliasChar
-						source = table
+						source = NewQueryContextFromNode(input)
 					} else {
 						newQuery := NewQueryContextFromNode(input)
-						newQuery.Alias = aliasChar
+						//newQuery.Alias = aliasChar
 						source = newQuery
 					}
 					ctx.Joins = append(ctx.Joins, GenJoin{
 						Source:    source,
 						Condition: cond.Condition,
 						Type:      cond.Type(),
+						Alias: aliasChar,
 					})
 				}
 			}
 		}
+
+		ctx.Operations += 1
 	}
 
 	return ctx

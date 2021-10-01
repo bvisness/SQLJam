@@ -7,7 +7,6 @@ import (
 
 type PickColumns struct {
 	NodeData
-	SqlSource
 	Alias string
 
 	Entries []*PickColumnsEntry

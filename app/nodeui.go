@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/bvisness/SQLJam/node"
@@ -50,14 +51,52 @@ func doNodeUI(n *node.Node) {
 const UIFieldHeight = 24
 const UIFieldSpacing = 4
 
-func getSchema(n *node.Node) ([]string, error) {
-	rows, err := db.Query(n.GenerateSql() + " LIMIT 0") // TODO: The limit should be part of SQL generation, yeah?
+func getSchemaOfQueryContext(ctx *node.QueryContext) ([]string, error) {
+	srcToRun := ctx.SourceToSql(0)
+
+	rows, err := db.Query(srcToRun + " LIMIT 0")
 	if err != nil {
+		//fmt.Println(src.SourceToSql(0))
+		fmt.Println(err.Error())
 		return nil, err
 	}
-	defer rows.Close()
-
 	return rows.Columns()
+}
+
+func getSchema(n *node.Node) ([]string, error) {
+
+	ctx := node.NewQueryContextFromNode(n)
+
+	//ctx.Joins[0].Source.SourceAlias()
+
+	var colsToShow = make([]string, 0)
+
+	// ### Get CURRENT source rows ###
+
+	var currentSourceRows []string
+
+	if len(ctx.Cols) == 0 {
+		currentSourceRows, _ = getSchemaOfQueryContext(ctx)
+		fmt.Println("Current schema alias is: " + ctx.SourceAlias())
+	} else {
+		currentSourceRows = ctx.Cols
+	}
+
+	for _, row := range currentSourceRows {
+		colsToShow = append(colsToShow, ctx.SourceAlias() + "." + row)
+	}
+
+	// ### Get JOIN source rows ###
+
+	for i, join := range ctx.Joins {
+		input := n.Inputs[i+1]
+		joinCols, _ := getSchemaOfQueryContext(node.NewQueryContextFromNode(input))
+		for _, col := range joinCols {
+			colsToShow = append(colsToShow, join.Alias + "." + col)
+		}
+	}
+
+	return colsToShow, nil
 }
 
 var errorOpts = []raygui.DropdownExOption{{"ERROR", "ERROR"}}
