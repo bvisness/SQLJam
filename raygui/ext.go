@@ -6,6 +6,20 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
+var cam *rl.Camera2D
+
+func Set2DCamera(camera *rl.Camera2D) {
+	cam = camera
+}
+
+// Gets mouse position, respecting the 2D camera's transform.
+func GetMousePositionWorld() rl.Vector2 {
+	if cam == nil {
+		return rl.GetMousePosition()
+	}
+	return rl.GetScreenToWorld2D(rl.GetMousePosition(), *cam)
+}
+
 type DropdownEx struct {
 	Open bool
 

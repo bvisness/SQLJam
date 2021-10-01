@@ -8,6 +8,9 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
+// MODIFIED: All occurrences of rl.GetMousePosition have been replaced with
+// GetMousePositionWorld from ext.go.
+
 // Style property
 type GuiStyleProp struct {
 	ControlId     uint
@@ -933,7 +936,7 @@ func ScrollPanel(bounds, content rl.Rectangle, scroll *rl.Vector2) rl.Rectangle 
 	// Update control
 	//--------------------------------------------------------------------
 	if state != StateDisabled && !guiLocked {
-		mousePoint := rl.GetMousePosition()
+		mousePoint := GetMousePositionWorld()
 
 		// Check button state
 		if rl.CheckCollisionPointRec(mousePoint, bounds) {
@@ -1062,7 +1065,7 @@ func Button(bounds rl.Rectangle, text string) bool {
 	// Update control
 	//--------------------------------------------------------------------
 	if state != StateDisabled && !guiLocked {
-		mousePoint := rl.GetMousePosition()
+		mousePoint := GetMousePositionWorld()
 
 		// Check button state
 		if rl.CheckCollisionPointRec(mousePoint, bounds) {
@@ -1102,7 +1105,7 @@ func LabelButton(bounds rl.Rectangle, text string) bool {
 	// Update control
 	//--------------------------------------------------------------------
 	if state != StateDisabled && !guiLocked {
-		mousePoint := rl.GetMousePosition()
+		mousePoint := GetMousePositionWorld()
 
 		// Check button state
 		if rl.CheckCollisionPointRec(mousePoint, bounds) {
@@ -1140,7 +1143,7 @@ func ImageButtonEx(bounds rl.Rectangle, text string, texture rl.Texture2D, texSo
 	// Update control
 	//--------------------------------------------------------------------
 	if state != StateDisabled && !guiLocked {
-		mousePoint := rl.GetMousePosition()
+		mousePoint := GetMousePositionWorld()
 
 		// Check button state
 		if rl.CheckCollisionPointRec(mousePoint, bounds) {
@@ -1175,7 +1178,7 @@ func Toggle(bounds rl.Rectangle, text string, active bool) bool {
 	// Update control
 	//--------------------------------------------------------------------
 	if state != StateDisabled && !guiLocked {
-		mousePoint := rl.GetMousePosition()
+		mousePoint := GetMousePositionWorld()
 
 		// Check toggle button state
 		if rl.CheckCollisionPointRec(mousePoint, bounds) {
@@ -1264,7 +1267,7 @@ func CheckBox(bounds rl.Rectangle, text string, checked bool) bool {
 	// Update control
 	//--------------------------------------------------------------------
 	if state != StateDisabled && !guiLocked {
-		mousePoint := rl.GetMousePosition()
+		mousePoint := GetMousePositionWorld()
 
 		x := bounds.X
 		if TextAlignment(GetStyle(CheckBoxControl, TextAlignmentProp)) == TextAlignLeft {
@@ -1344,7 +1347,7 @@ func ComboBox(bounds rl.Rectangle, text string, active int) int {
 	// Update control
 	//--------------------------------------------------------------------
 	if state != StateDisabled && !guiLocked && itemCount > 1 {
-		mousePoint := rl.GetMousePosition()
+		mousePoint := GetMousePositionWorld()
 
 		if rl.CheckCollisionPointRec(mousePoint, bounds) || rl.CheckCollisionPointRec(mousePoint, selector) {
 			if rl.IsMouseButtonPressed(rl.MouseLeftButton) {
@@ -1406,7 +1409,7 @@ func DropdownBox(bounds rl.Rectangle, text string, active *int, editMode bool) b
 	// Update control
 	//--------------------------------------------------------------------
 	if state != StateDisabled && !guiLocked && itemCount > 1 {
-		mousePoint := rl.GetMousePosition()
+		mousePoint := GetMousePositionWorld()
 
 		if editMode {
 			state = StatePressed
@@ -1514,7 +1517,7 @@ func TextBox(bounds rl.Rectangle, text string, textSize int, editMode bool) (str
 	// Update control
 	//--------------------------------------------------------------------
 	if state != StateDisabled && !guiLocked {
-		mousePoint := rl.GetMousePosition()
+		mousePoint := GetMousePositionWorld()
 
 		if editMode {
 			state = StatePressed
@@ -1680,7 +1683,7 @@ func ScrollBar(bounds rl.Rectangle, value, minValue, maxValue int) int {
 	// Update control
 	//--------------------------------------------------------------------
 	if (state != StateDisabled) && !guiLocked {
-		mousePoint := rl.GetMousePosition()
+		mousePoint := GetMousePositionWorld()
 
 		if rl.CheckCollisionPointRec(mousePoint, bounds) {
 			state = StateFocused
@@ -1824,7 +1827,7 @@ func ListViewEx(bounds rl.Rectangle, text []string, count int, focus *int, scrol
 	// Update control
 	//--------------------------------------------------------------------
 	if (state != StateDisabled) && !guiLocked {
-		mousePoint := rl.GetMousePosition()
+		mousePoint := GetMousePositionWorld()
 
 		// Check mouse inside list view
 		if rl.CheckCollisionPointRec(mousePoint, bounds) {
@@ -1964,7 +1967,7 @@ func GuiColorPanelEx(bounds rl.Rectangle, color rl.Color, hue float32) rl.Color 
 	// Update control
 	//--------------------------------------------------------------------
 	if (state != StateDisabled) && !guiLocked {
-		mousePoint := rl.GetMousePosition()
+		mousePoint := GetMousePositionWorld()
 
 		if rl.CheckCollisionPointRec(mousePoint, bounds) {
 			if rl.IsMouseButtonDown(rl.MouseLeftButton) {

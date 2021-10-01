@@ -53,6 +53,8 @@ func drawBasicText(text string, x float32, y float32, size float32, color rl.Col
 }
 
 func doFrame() {
+	raygui.Set2DCamera(&cam)
+
 	rl.BeginDrawing()
 	defer rl.EndDrawing()
 
