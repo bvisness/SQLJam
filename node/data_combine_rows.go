@@ -1,0 +1,33 @@
+package node
+
+import (
+	"github.com/bvisness/SQLJam/raygui"
+	rl "github.com/gen2brain/raylib-go/raylib"
+)
+
+type CombineType int
+
+const (
+	Union CombineType = iota + 1
+	UnionAll
+	Intersect
+	Except
+)
+
+type CombineRows struct {
+	NodeData
+	CombinationType CombineType
+	Dropdown        raygui.DropdownEx
+}
+
+func NewCombineRows(combineType CombineType) *Node {
+	return &Node{
+		Title:   "Combine Rows",
+		CanSnap: false,
+		Color:   rl.NewColor(178, 223, 219, 255),
+		Inputs:  make([]*Node, 2),
+		Data: &CombineRows{
+			CombinationType: combineType,
+		},
+	}
+}

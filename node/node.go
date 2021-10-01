@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/bvisness/SQLJam/raygui"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
@@ -30,74 +29,6 @@ type Node struct {
 	HasChildren    bool
 	SnapTargetRect rl.Rectangle
 	UIRect         rl.Rectangle // roughly where the UI should fit
-}
-
-func NewTable() *Node {
-	return &Node{
-		Title:   "Table",
-		CanSnap: false,
-		Color:   rl.NewColor(242, 201, 76, 255),
-		Data: &Table{
-			TableDropdown: raygui.NewDropdownEx(),
-		},
-	}
-}
-
-func NewPickColumns() *Node {
-	return &Node{
-		Title:   "Pick Columns",
-		CanSnap: true,
-		Color:   rl.NewColor(244, 143, 177, 255),
-		Inputs:  make([]*Node, 1),
-		Data: &PickColumns{
-			Entries: []*PickColumnsEntry{{}},
-		},
-	}
-}
-
-func NewFilter() *Node {
-	return &Node{
-		Title:   "Filter",
-		CanSnap: true,
-		Color:   rl.NewColor(111, 207, 151, 255),
-		Inputs:  make([]*Node, 1),
-		Data:    &Filter{},
-	}
-}
-
-func NewOrder() *Node {
-	return &Node{
-		Title:   "Order",
-		CanSnap: true,
-		Color:   rl.NewColor(255, 204, 128, 255),
-		Inputs:  make([]*Node, 1),
-		Data: &Order{
-			Cols:         make([]OrderColumn, 1),
-			ColDropdowns: raygui.MakeDropdownExList(1),
-		},
-	}
-}
-
-func NewCombineRows(combineType CombineType) *Node {
-	return &Node{
-		Title:   "Combine Rows",
-		CanSnap: false,
-		Color:   rl.NewColor(178, 223, 219, 255),
-		Inputs:  make([]*Node, 2),
-		Data: &CombineRows{
-			CombinationType: combineType,
-		},
-	}
-}
-
-func NewJoin() *Node {
-	return &Node{
-		Title:   "Join",
-		CanSnap: false,
-		Color:   rl.NewColor(102, 187, 106, 255),
-		Inputs:  make([]*Node, 2),
-		Data:    &Join{},
-	}
 }
 
 func (n *Node) OldSqlGen(hasParent bool) string {
