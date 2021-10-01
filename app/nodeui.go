@@ -1,9 +1,10 @@
 package app
 
 import (
+	"log"
+
 	"github.com/bvisness/SQLJam/node"
 	"github.com/bvisness/SQLJam/raygui"
-	"log"
 )
 
 // Before drawing. Sort out your data, set your layout info, etc.
@@ -25,8 +26,6 @@ func doNodeUpdate(n *node.Node) {
 		doAggregateUpdate(n, d)
 	}
 }
-
-
 
 // Drawing and user input.
 func doNodeUI(n *node.Node) {
@@ -50,8 +49,6 @@ func doNodeUI(n *node.Node) {
 
 const UIFieldHeight = 24
 const UIFieldSpacing = 4
-const orderDirectionWidth = 70
-
 
 func getSchema(n *node.Node) ([]string, error) {
 	rows, err := db.Query(n.GenerateSql() + " LIMIT 0") // TODO: The limit should be part of SQL generation, yeah?

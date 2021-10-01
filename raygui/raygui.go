@@ -1205,7 +1205,7 @@ func Toggle(bounds rl.Rectangle, text string, active bool) bool {
 		} else {
 			borderColorProp = Border + ControlProperty(state)*3
 			baseColorProp = Base + ControlProperty(state)*3
-			textColorProp = Base + ControlProperty(state)*3
+			textColorProp = Text + ControlProperty(state)*3
 		}
 		DrawRectangle(bounds, int(GetStyle(ToggleControl, BorderWidthProp)), rl.Fade(rl.GetColor(int32(GetStyle(ToggleControl, borderColorProp))), guiAlpha), rl.Fade(rl.GetColor(int32(GetStyle(ToggleControl, baseColorProp))), guiAlpha))
 		DrawText(text, GetTextBounds(ToggleControl, bounds), TextAlignment(GetStyle(ToggleControl, TextAlignmentProp)), rl.Fade(rl.GetColor(int32(GetStyle(ToggleControl, textColorProp))), guiAlpha))

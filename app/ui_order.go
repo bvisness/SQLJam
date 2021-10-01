@@ -6,6 +6,8 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
+const orderDirectionWidth = 40
+
 func doOrderUpdate(n *node.Node, o *node.Order) {
 	uiHeight := 0
 	for range o.Cols {
@@ -77,22 +79,16 @@ func doOrderUI(n *node.Node, o *node.Order) {
 			})
 			col.Col, _ = colName.(string)
 
-			activeSort := 0
+			directionStr := "A-Z"
 			if col.Descending {
-				activeSort = 1
+				directionStr = "Z-A"
 			}
-			newSort := raygui.ComboBox(rl.Rectangle{
+			col.Descending = raygui.Toggle(rl.Rectangle{
 				n.UIRect.X + n.UIRect.Width - orderDirectionWidth,
 				fieldY,
 				orderDirectionWidth,
 				UIFieldHeight,
-			}, "A-Z;Z-A", activeSort)
-			switch newSort {
-			case 1:
-				col.Descending = true
-			default:
-				col.Descending = false
-			}
+			}, directionStr, col.Descending)
 		}()
 	}
 }

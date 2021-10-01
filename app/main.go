@@ -48,6 +48,9 @@ var cam = rl.Camera2D{
 var panMouseStart rl.Vector2
 var panCamStart rl.Vector2
 
+const pinSize = 12
+const wireThickness = 3
+
 func drawBasicText(text string, x float32, y float32, size float32, color rl.Color) {
 	rl.DrawTextEx(font, text, rl.Vector2{X: x, Y: y}, size, 2, color)
 }
@@ -100,6 +103,8 @@ func doFrame() {
 
 	// update nodes
 	for _, n := range nodes {
+		n.UISize = rl.Vector2{}
+		n.InputPinHeights = nil
 		doNodeUpdate(n)
 	}
 
@@ -143,15 +148,14 @@ func doFrame() {
 				if input == nil {
 					continue
 				}
-				rl.DrawLineBezier(input.OutputPinPos, n.InputPinPos[i], 2, rl.Black)
+				rl.DrawLineBezier(input.OutputPinPos, n.InputPinPos[i], wireThickness, rl.Black)
 			}
 		}
 
 		if draggingWire() {
-			rl.DrawLineBezier(wireDragOutputNode.OutputPinPos, raygui.GetMousePositionWorld(), 2, rl.Black)
+			rl.DrawLineBezier(wireDragOutputNode.OutputPinPos, raygui.GetMousePositionWorld(), wireThickness, rl.Black)
 		}
 
-		const pinSize = 12
 		getPinRect := func(pos rl.Vector2, right bool) rl.Rectangle {
 			var x float32
 			if right {
@@ -417,9 +421,10 @@ func doLayout() {
 
 	const titleBarHeight = 24
 	const uiPadding = 10
-	const pinStartHeight = titleBarHeight + uiPadding + 6 // TODO: pins are really wrong, and this should be done per node on update
-	const pinDefaultSpacing = 36
 	const snapRectHeight = 30
+	const pinStartHeight = titleBarHeight + uiPadding
+
+	const pinDefaultSpacing = 36 // used if the node does not specify pin heights in update
 
 	basicLayout := func(n *node.Node) {
 		n.Size = rl.Vector2{
@@ -427,19 +432,24 @@ func doLayout() {
 			float32(titleBarHeight + uiPadding + int(n.UISize.Y) + uiPadding),
 		}
 
+		// use default input pin positions if not provided in update
+		if len(n.InputPinHeights) < len(n.Inputs) {
+			n.InputPinHeights = make([]int, len(n.Inputs))
+			for i := range n.Inputs {
+				n.InputPinHeights[i] = i * pinDefaultSpacing
+			}
+		}
+
 		// init InputPinPos if necessary
 		if len(n.InputPinPos) != len(n.Inputs) {
 			n.InputPinPos = make([]rl.Vector2, len(n.Inputs))
 		}
 
-		pinHeight := pinStartHeight
 		for i := range n.Inputs {
 			if n.Snapped && i == 0 {
 				continue
 			}
-
-			n.InputPinPos[i] = rl.Vector2{n.Pos.X, n.Pos.Y + float32(pinHeight)}
-			pinHeight += pinDefaultSpacing
+			n.InputPinPos[i] = rl.Vector2{n.Pos.X, n.Pos.Y + pinStartHeight + float32(n.InputPinHeights[i]) + pinSize/2}
 		}
 	}
 
@@ -505,7 +515,7 @@ func doLayout() {
 	// output pin positions (unsnapped)
 	for _, n := range nodes {
 		if !n.Snapped {
-			n.OutputPinPos = rl.Vector2{n.Pos.X + n.Size.X, n.Pos.Y + float32(pinStartHeight)}
+			n.OutputPinPos = rl.Vector2{n.Pos.X + n.Size.X, n.Pos.Y + float32(pinStartHeight) + pinSize/2}
 		}
 	}
 

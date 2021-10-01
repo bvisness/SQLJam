@@ -5,14 +5,28 @@ import (
 	"strings"
 )
 
-func NewQueryContext(source SqlSource) *QueryContext {
-	return &QueryContext{
-		Source: source,
-	}
+// Creates an empty query context.
+func NewQueryContext() *QueryContext {
+	return &QueryContext{}
 }
 
+// Creates a query context and fills it with data from a given node.
+// For example, calling this with a Table/Filter will result in this
+// structure:
+//
+//	context:
+//	  source: table
+//    filters: filters
 func NewQueryContextFromNode(n *Node) *QueryContext {
-	return NewQueryContext(nil).CreateQuery(n)
+	return NewQueryContext().CreateQuery(n)
+}
+
+// Wraps the given query context in a new, empty context. Use when you
+// want to break something...into a subquery.
+func WrapQueryContext(ctx *QueryContext) *QueryContext {
+	return &QueryContext{
+		Source: ctx,
+	}
 }
 
 // SourceToSql Turns a context tree into an SQL statement string
@@ -55,9 +69,6 @@ func (ctx *QueryContext) SourceToSql() string {
 		if ctx.Source == nil {
 			return "Error: No SQL Source"
 		} else {
-			//fmt.Println(fmt.Sprintf("child element: %s ||| %s", reflect.TypeOf(ctx.Source), ctx.Source.SourceToSql()))
-			//fmt.Println(fmt.Sprintf("it's alias is: %s ### %s", ctx.Source.SourceAlias(), ctx.Alias))
-			//fmt.Println(fmt.Sprintf("Doot %s", reflect.TypeOf(ctx.Source)))
 			switch ctx.Source.(type) {
 			case *Table:
 				sql += fmt.Sprintf(" FROM %s", ctx.Source.SourceToSql())
@@ -69,6 +80,10 @@ func (ctx *QueryContext) SourceToSql() string {
 			if ctx.Source.SourceAlias() != "" {
 				sql += fmt.Sprintf(" AS %s", ctx.Alias)
 			}
+		}
+
+		for _, join := range ctx.Joins {
+			sql += fmt.Sprintf(" %s (%s) ON %s", join.Type.String(), join.Source.SourceToSql(), join.Condition)
 		}
 
 		if len(ctx.FilterConditions) > 0 && ctx.FilterConditions[0] != "" {
@@ -106,7 +121,7 @@ func (ctx *QueryContext) CreateQuery(n *Node) *QueryContext {
 	case *PickColumns:
 		ctx = ctx.CreateQuery(n.Inputs[0])
 		if len(ctx.Cols) > 0 {
-			ctx = NewQueryContext(ctx)
+			ctx = WrapQueryContext(ctx)
 		}
 
 		ctx.Cols = d.Cols()
@@ -115,14 +130,14 @@ func (ctx *QueryContext) CreateQuery(n *Node) *QueryContext {
 	case *Filter:
 		ctx = ctx.CreateQuery(n.Inputs[0])
 		if len(ctx.Cols) > 0 {
-			ctx = NewQueryContext(ctx)
+			ctx = WrapQueryContext(ctx)
 		}
 
 		ctx.FilterConditions = append(ctx.FilterConditions, d.Conditions) // TODO: This should be split into multiple again? Right??
 	case *Order:
 		ctx = ctx.CreateQuery(n.Inputs[0])
 		if len(ctx.Orders) > 0 {
-			ctx = NewQueryContext(ctx)
+			ctx = WrapQueryContext(ctx)
 		}
 
 		for _, col := range d.Cols {
@@ -135,7 +150,7 @@ func (ctx *QueryContext) CreateQuery(n *Node) *QueryContext {
 		firstCtx := NewQueryContextFromNode(n.Inputs[0])
 		firstCtx.Orders = nil // anything involved in Combine Rows can't use ORDER BY
 
-		ctx = NewQueryContext(firstCtx)
+		ctx = WrapQueryContext(firstCtx)
 
 		// All other inputs get thrown into a new recursive context
 		for _, input := range n.Inputs[1:] {
@@ -149,24 +164,30 @@ func (ctx *QueryContext) CreateQuery(n *Node) *QueryContext {
 			}
 		}
 	case *Join:
-		numNotNull := 0
-		for _, input := range n.Inputs {
-			if input != nil {
-				numNotNull++
-			}
-		}
-
-		// Top input gets recursive generated as normal in same context
 		if n.Inputs[0] != nil {
-			ctx.CreateQuery(n.Inputs[0])
-			// Only do combines if first wire and at least one other wire is connected
-			if numNotNull >= 2 {
-				// All other inputs get thrown into a new recursive context
-				for _, input := range n.Inputs[1:] {
-					if input != nil {
-						newCtx := NewQueryContextFromNode(input)
-						ctx.Joins = append(ctx.Joins, newCtx)
+			if table, ok := n.Inputs[0].Data.(*Table); ok {
+				ctx = NewQueryContext()
+				ctx.Source = table
+			} else {
+				firstCtx := NewQueryContextFromNode(n.Inputs[0])
+				ctx = WrapQueryContext(firstCtx)
+			}
+
+			// All other inputs get thrown into a new recursive context
+			for i, input := range n.Inputs[1:] {
+				if input != nil {
+					cond := d.Conditions[i]
+					var source SqlSource
+					if table, ok := input.Data.(*Table); ok {
+						source = table
+					} else {
+						source = NewQueryContextFromNode(input)
 					}
+					ctx.Joins = append(ctx.Joins, GenJoin{
+						Source:    source,
+						Condition: cond.Condition,
+						Type:      cond.Type(),
+					})
 				}
 			}
 		}

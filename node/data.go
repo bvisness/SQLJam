@@ -19,6 +19,12 @@ type GenOrder struct {
 	Descending bool
 }
 
+type GenJoin struct {
+	Source    SqlSource
+	Condition string
+	Type      JoinType
+}
+
 // A context for node generation recursion.
 // Eventually, we can no longer add onto this query. Thus,
 // we continue recursive generation with a new Source context object.
@@ -31,9 +37,7 @@ type QueryContext struct {
 	Source     SqlSource // or NodeGenContext
 
 	Combines []GenCombine
-
-	Joins          []*QueryContext
-	JoinConditions []string
+	Joins    []GenJoin
 
 	FilterConditions []string
 
