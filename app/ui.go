@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/bvisness/SQLJam/raygui"
+	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 const UIFieldHeight = 24
@@ -39,7 +40,7 @@ func getSchema(n *Node) ([]string, error) {
 	}
 
 	for _, row := range currentSourceRows {
-		colsToShow = append(colsToShow, ctx.SourceAlias() + "." + row)
+		colsToShow = append(colsToShow, ctx.SourceAlias()+"."+row)
 	}
 
 	// ### Get JOIN source rows ###
@@ -48,7 +49,7 @@ func getSchema(n *Node) ([]string, error) {
 		input := n.Inputs[i+1]
 		joinCols, _ := getSchemaOfQueryContext(NewQueryContextFromNode(input))
 		for _, col := range joinCols {
-			colsToShow = append(colsToShow, join.Alias + "." + col)
+			colsToShow = append(colsToShow, join.Alias+"."+col)
 		}
 	}
 
@@ -81,3 +82,10 @@ func columnNameDropdownOpts(inputNode *Node) []raygui.DropdownExOption {
 	return opts
 }
 
+func drawBasicText(text string, x float32, y float32, size float32, color rl.Color) {
+	rl.DrawTextEx(font, text, rl.Vector2{X: x, Y: y}, size, 2, color)
+}
+
+func measureBasicText(text string, size float32) rl.Vector2 {
+	return rl.MeasureTextEx(font, text, size, 2)
+}

@@ -135,10 +135,20 @@ type ScrollPanelEx struct {
 func (s *ScrollPanelEx) Do(
 	bounds rl.Rectangle,
 	content rl.Rectangle,
-	draw func(start rl.Vector2, view rl.Rectangle),
+	draw func(scroll ScrollContext),
 ) {
 	view := ScrollPanel(bounds, content, &s.Scroll)
 	rl.BeginScissorMode(int32(view.X), int32(view.Y), int32(view.Width), int32(view.Height))
-	draw(rl.Vector2{view.X + s.Scroll.X, view.Y + s.Scroll.Y}, view)
+	draw(ScrollContext{
+		View:   view,
+		Scroll: s.Scroll,
+		Start:  rl.Vector2{view.X + s.Scroll.X, view.Y + s.Scroll.Y},
+	})
 	rl.EndScissorMode()
+}
+
+type ScrollContext struct {
+	View   rl.Rectangle
+	Scroll rl.Vector2
+	Start  rl.Vector2 // view X/Y + scroll X/Y
 }
