@@ -251,7 +251,7 @@ func doFrame() {
 
 				previewHover := rl.CheckCollisionPointRec(raygui.GetMousePositionWorld(), previewRect)
 				if previewHover && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
-					latestResult = doQuery(n.GenerateSql())
+					setLatestResult(doQuery(n.GenerateSql()))
 				}
 
 				n.DoUI()
