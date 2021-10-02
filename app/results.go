@@ -18,6 +18,12 @@ var latestResultsPanel raygui.ScrollPanelEx
 var lrRows [][]string
 var lrColWidths []float32
 
+const resultsOpenDuration = 0.3
+
+var resultsOpen bool
+var resultsOpenFrac float32 // 0 for closed, 1 for open
+var resultsCurrentHeight float32 = 0
+
 func setLatestResult(res *queryResult) {
 	latestResult = res
 
@@ -49,7 +55,45 @@ func setLatestResult(res *queryResult) {
 }
 
 func drawLatestResults() {
-	DoPane(rl.Rectangle{screenWidth - sidebarWidth, 0, sidebarWidth, screenHeight - currentSQLHeight}, func(p Pane) {
+	if resultsOpen {
+		resultsOpenFrac += rl.GetFrameTime() / resultsOpenDuration
+	} else {
+		resultsOpenFrac -= rl.GetFrameTime() / resultsOpenDuration
+	}
+	resultsOpenFrac = Clamp(resultsOpenFrac, 0, 1)
+
+	resultsCurrentHeight = EaseInOutCubic(resultsOpenFrac) * resultsMaxHeight
+
+	var lineY float32 = screenHeight - resultsCurrentHeight - dividerThickness/2
+	rl.DrawLineEx(
+		rl.Vector2{0, lineY},
+		rl.Vector2{screenWidth, lineY},
+		dividerThickness, rl.Black,
+	)
+
+	const tabWidth = 60
+	const tabHeight = 40
+
+	var tabX float32 = screenWidth - tabWidth
+	var tabY float32 = lineY - tabHeight
+	tabRect := rl.Rectangle{tabX, tabY, tabWidth, tabHeight}
+	rl.DrawRectangleRounded(tabRect, RoundnessPx(tabRect, 4), 5, rl.Black)
+
+	const triangleSize = 12
+	t1 := rl.Vector2{-triangleSize, triangleSize / 2}
+	t2 := rl.Vector2{triangleSize, triangleSize / 2}
+	t3 := rl.Vector2{0, -triangleSize / 2}
+
+	trianglePos := rl.Vector2{tabX + tabWidth/2, tabY + tabHeight/2}
+	triangleRot := resultsCurrentHeight / resultsMaxHeight * rl.Pi
+	rl.DrawTriangle(
+		rl.Vector2Add(Vector2Rotate(t1, triangleRot), trianglePos),
+		rl.Vector2Add(Vector2Rotate(t2, triangleRot), trianglePos),
+		rl.Vector2Add(Vector2Rotate(t3, triangleRot), trianglePos),
+		rl.White,
+	)
+
+	DoPane(rl.Rectangle{0, screenHeight - resultsCurrentHeight, screenWidth - currentSQLWidth, resultsMaxHeight}, func(p Pane) {
 		if latestResult == nil {
 			return
 		}
@@ -87,4 +131,12 @@ func drawLatestResults() {
 			}
 		})
 	})
+
+	if rl.CheckCollisionPointRec(rl.GetMousePosition(), tabRect) && rl.IsMouseButtonReleased(rl.MouseLeftButton) {
+		resultsOpen = !resultsOpen
+	}
+}
+
+func setResultsOpen(open bool) {
+	resultsOpen = !resultsOpen
 }

@@ -11,14 +11,12 @@ import (
 
 const screenWidth = 1920
 const screenHeight = 1080
-const sidebarWidth = 600
-const currentSQLHeight = 300
+const resultsMaxHeight = 400
+const currentSQLWidth = 500
 
 const dividerThickness = 4
 const pinSize = 12
 const wireThickness = 3
-
-const sidebarX = screenWidth - sidebarWidth
 
 var nodes []*Node
 var font rl.Font
@@ -33,6 +31,11 @@ func Main() {
 	font = rl.LoadFont("JetBrainsMono-Regular.ttf")
 	//rl.GenTextureMipmaps(&font.Texture) // kinda muddy? need second opinion
 	rl.SetTextureFilter(font.Texture, rl.FilterBilinear) // FILTER_TRILINEAR requires generated mipmaps
+
+	// Styles
+	{
+		raygui.SetStyle(raygui.ScrollBarControl, raygui.ArrowsVisible, 1)
+	}
 
 	close := openDB()
 	defer close()
@@ -65,7 +68,7 @@ func doFrame() {
 
 	updateDrag()
 
-	DoPane(rl.Rectangle{0, 0, screenWidth - sidebarWidth, screenHeight}, func(p Pane) {
+	DoPane(rl.Rectangle{0, 0, screenWidth, screenHeight - resultsCurrentHeight}, func(p Pane) {
 		// Pan/zoom camera
 		{
 			const minZoom = 0.2
@@ -229,7 +232,7 @@ func doFrame() {
 
 				titleHover := rl.CheckCollisionPointRec(raygui.GetMousePositionWorld(), titleBarRect)
 				if titleHover {
-					currentSQL = n.GenerateSql()
+
 				}
 				if titleHover && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
 					if tryStartDrag(n, n.Pos) {
@@ -251,7 +254,10 @@ func doFrame() {
 
 				previewHover := rl.CheckCollisionPointRec(raygui.GetMousePositionWorld(), previewRect)
 				if previewHover && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
-					setLatestResult(doQuery(n.GenerateSql()))
+					sql := n.GenerateSql()
+					currentSQL = sql
+					resultsOpen = true
+					setLatestResult(doQuery(sql))
 				}
 
 				n.DoUI()
@@ -266,11 +272,6 @@ func doFrame() {
 	drawLatestResults()
 	drawCurrentSQL()
 
-	rl.DrawLineEx(
-		rl.Vector2{sidebarX - dividerThickness/2, 0},
-		rl.Vector2{sidebarX - dividerThickness/2, screenHeight},
-		dividerThickness, rl.Black,
-	)
 }
 
 var blerp rl.Vector2
@@ -387,14 +388,14 @@ func nodeSortTop() int {
 var currentSQLPanel raygui.ScrollPanelEx
 
 func drawCurrentSQL() {
-	DoPane(rl.Rectangle{screenWidth - sidebarWidth, screenHeight - currentSQLHeight, sidebarWidth, currentSQLHeight}, func(p Pane) {
-		rl.DrawLineEx(
-			rl.Vector2{sidebarX, screenHeight - currentSQLHeight + dividerThickness/2},
-			rl.Vector2{screenWidth, screenHeight - currentSQLHeight + dividerThickness/2},
-			dividerThickness, rl.Black,
-		)
-
-		const height = currentSQLHeight - dividerThickness
+	var lineX float32 = screenWidth - currentSQLWidth + dividerThickness/2
+	rl.DrawLineEx(
+		rl.Vector2{lineX, screenHeight - resultsCurrentHeight},
+		rl.Vector2{lineX, screenHeight},
+		dividerThickness, rl.Black,
+	)
+	DoPane(rl.Rectangle{screenWidth - currentSQLWidth + dividerThickness, screenHeight - resultsCurrentHeight, currentSQLWidth - dividerThickness, resultsMaxHeight}, func(p Pane) {
+		const copyButtonHeight = 40
 		const padding = 6
 		const fontSize = 20
 		const lineHeight = 24
@@ -410,8 +411,7 @@ func drawCurrentSQL() {
 		}
 
 		scrollPanelBounds := p.Bounds
-		scrollPanelBounds.Y += dividerThickness
-		scrollPanelBounds.Height = height
+		scrollPanelBounds.Height = p.Bounds.Height - copyButtonHeight
 		currentSQLPanel.Do(
 			scrollPanelBounds,
 			rl.Rectangle{
@@ -424,5 +424,9 @@ func drawCurrentSQL() {
 				}
 			},
 		)
+
+		if raygui.Button(rl.Rectangle{p.Bounds.X, p.Bounds.Y + p.Bounds.Height - copyButtonHeight, p.Bounds.Width, copyButtonHeight}, "Copy") {
+			rl.SetClipboardText(currentSQL)
+		}
 	})
 }
