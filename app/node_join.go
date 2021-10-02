@@ -1,6 +1,8 @@
 package app
 
 import (
+	"fmt"
+
 	"github.com/bvisness/SQLJam/raygui"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
@@ -177,4 +179,16 @@ func (d *Join) DoUI(n *Node) {
 			d.Conditions = d.Conditions[:len(d.Conditions)-1]
 		}
 	}
+}
+
+func (j *Join) Serialize() string {
+	res := ""
+	res += j.FirstAlias
+	for _, cond := range j.Conditions {
+		res += cond.Alias
+		res += cond.Condition
+		res += fmt.Sprintf("%v", cond.Left)
+		res += fmt.Sprintf("%v", cond.Right)
+	}
+	return res
 }

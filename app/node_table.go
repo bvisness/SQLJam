@@ -94,3 +94,7 @@ func updateTableDropdown(dropdown *raygui.DropdownEx) {
 
 	dropdown.SetOptions(opts...)
 }
+
+func (d *Table) Serialize() string {
+	return d.Table
+}

@@ -1,6 +1,8 @@
 package app
 
 import (
+	"fmt"
+
 	"github.com/bvisness/SQLJam/raygui"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
@@ -201,4 +203,17 @@ func (d *Aggregate) DoUI(n *Node) {
 			}()
 		}
 	}
+}
+
+func (d *Aggregate) Serialize() string {
+	res := ""
+	for _, agg := range d.Aggregates {
+		res += fmt.Sprintf("%v", agg.Type)
+		res += agg.Col
+		res += agg.Alias
+	}
+	for _, gb := range d.GroupBys {
+		res += gb.Col
+	}
+	return res
 }

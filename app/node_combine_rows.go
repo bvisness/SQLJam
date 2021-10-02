@@ -1,6 +1,8 @@
 package app
 
 import (
+	"fmt"
+
 	"github.com/bvisness/SQLJam/raygui"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
@@ -47,4 +49,8 @@ func (d *CombineRows) Update(n *Node) {
 func (d *CombineRows) DoUI(n *Node) {
 	chosen := d.Dropdown.Do(n.UIRect)
 	d.CombinationType = chosen.(CombineType)
+}
+
+func (d *CombineRows) Serialize() string {
+	return fmt.Sprintf("%v", d.CombinationType)
 }

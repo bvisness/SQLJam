@@ -1,6 +1,10 @@
 package app
 
-import rl "github.com/gen2brain/raylib-go/raylib"
+import (
+	"fmt"
+
+	rl "github.com/gen2brain/raylib-go/raylib"
+)
 
 type Node struct {
 	Data   NodeData
@@ -27,21 +31,52 @@ type Node struct {
 	SnapTargetRect rl.Rectangle
 	Size           rl.Vector2   // size of the entire node - calculated based on UISize
 	UIRect         rl.Rectangle // the UI content area
+
+	// Schema / codegen properties
+	Schema []string
 }
 
 type NodeData interface {
 	Update(n *Node) // Set up data for later, set UI and layout stuff.
 	DoUI(n *Node)   // Run all of this node's specific UI.
+	Serialize() string
 }
 
 func (n *Node) Rect() rl.Rectangle {
 	return rl.Rectangle{n.Pos.X, n.Pos.Y, n.Size.X, n.Size.Y}
 }
 
+func clearAllSchemas() {
+	for _, n := range nodes {
+		n.Schema = nil
+	}
+}
+
 func (n *Node) Update() {
+	before := n.Serialize()
 	n.Data.Update(n)
+	after := n.Serialize()
+
+	if before != after {
+		clearAllSchemas()
+	}
 }
 
 func (n *Node) DoUI() {
+	before := n.Serialize()
 	n.Data.DoUI(n)
+	after := n.Serialize()
+
+	if before != after {
+		clearAllSchemas()
+	}
+}
+
+func (n *Node) Serialize() string {
+	res := ""
+	for _, input := range n.Inputs {
+		res += fmt.Sprintf("%p", input)
+	}
+	res += n.Data.Serialize()
+	return res
 }

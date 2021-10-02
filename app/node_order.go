@@ -1,6 +1,8 @@
 package app
 
 import (
+	"fmt"
+
 	"github.com/bvisness/SQLJam/raygui"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
@@ -10,8 +12,7 @@ const orderDirectionWidth = 40
 type Order struct {
 	NodeData
 
-	Alias string
-	Cols  []*OrderColumn
+	Cols []*OrderColumn
 }
 
 type OrderColumn struct {
@@ -117,4 +118,13 @@ func (d *Order) DoUI(n *Node) {
 			}, directionStr, col.Descending)
 		}()
 	}
+}
+
+func (d *Order) Serialize() string {
+	res := ""
+	for _, col := range d.Cols {
+		res += col.Col
+		res += fmt.Sprintf("%v", col.Descending)
+	}
+	return res
 }

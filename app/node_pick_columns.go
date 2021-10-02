@@ -126,3 +126,12 @@ func (p *PickColumns) DoUI(n *Node) {
 		}()
 	}
 }
+
+func (d *PickColumns) Serialize() string {
+	res := ""
+	for _, entry := range d.Entries {
+		res += entry.Col
+		res += entry.Alias
+	}
+	return res
+}

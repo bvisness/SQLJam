@@ -27,6 +27,10 @@ func getSchemaOfSqlSource(src SqlSource) ([]string, error) {
 }
 
 func getSchema(n *Node) []string {
+	if n.Schema != nil {
+		return n.Schema
+	}
+
 	ctx := NewQueryContextFromNode(n)
 	var colsToShow []string
 
@@ -34,6 +38,8 @@ func getSchema(n *Node) []string {
 	for _, col := range currentSourceCols {
 		colsToShow = append(colsToShow, col)
 	}
+
+	n.Schema = colsToShow
 
 	return colsToShow
 }
