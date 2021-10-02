@@ -1941,7 +1941,7 @@ func ListViewEx(bounds rl.Rectangle, text []string, count int, focus *int, scrol
 }
 
 // Color Panel control
-func GuiColorPanelEx(bounds rl.Rectangle, color rl.Color, hue float32) rl.Color {
+func ColorPanelEx(bounds rl.Rectangle, color rl.Color, hue float32) rl.Color {
 	state := guiState
 	var pickerSelector rl.Vector2
 
@@ -2018,8 +2018,83 @@ func GuiColorPanelEx(bounds rl.Rectangle, color rl.Color, hue float32) rl.Color 
 }
 
 func ColorPanel(bounds rl.Rectangle, color rl.Color) rl.Color {
-	return GuiColorPanelEx(bounds, color, -1)
+	return ColorPanelEx(bounds, color, -1)
 }
+
+// TODO(port): GuiColorBarAlpha
+
+// TODO(port): GuiColorBarHue
+
+// TODO(port): GuiColorPicker
+
+// TODO(port): GuiMessageBox
+
+// TODO(port): GuiTextInputBox
+
+// Grid control
+// NOTE: Returns grid mouse-hover selected cell
+// About drawing lines at subpixel spacing, simple put, not easy solution:
+// https://stackoverflow.com/questions/4435450/2d-opengl-drawing-lines-that-dont-exactly-fit-pixel-raster
+func Grid(bounds rl.Rectangle, spacing float32, subdivs int) rl.Vector2 {
+	const GridColorAlpha = 0.15 // Grid lines alpha amount
+
+	state := guiState
+	mousePoint := GetMousePositionWorld()
+	currentCell := rl.Vector2{-1, -1}
+
+	linesV := (int(bounds.Width/spacing))*subdivs + 1
+	linesH := (int(bounds.Height/spacing))*subdivs + 1
+
+	// Update control
+	//--------------------------------------------------------------------
+	if (state != StateDisabled) && !guiLocked {
+		if rl.CheckCollisionPointRec(mousePoint, bounds) {
+			currentCell.X = (mousePoint.X - bounds.X) / spacing
+			currentCell.Y = (mousePoint.Y - bounds.Y) / spacing
+		}
+	}
+	//--------------------------------------------------------------------
+
+	// Draw control
+	//--------------------------------------------------------------------
+	switch state {
+	case StateNormal:
+		if subdivs > 0 {
+			// Draw vertical grid lines
+			for i := 0; i < linesV; i++ {
+				var lineColor rl.Color
+				if i%subdivs == 0 {
+					lineColor = rl.Fade(rl.GetColor(int32(GetStyle(Default, LineColorProp))), GridColorAlpha*4)
+				} else {
+					lineColor = rl.Fade(rl.GetColor(int32(GetStyle(Default, LineColorProp))), GridColorAlpha)
+				}
+				lineV := rl.Rectangle{bounds.X + spacing*float32(i)/float32(subdivs), bounds.Y, 1, bounds.Height}
+				DrawRectangle(lineV, 0, rl.Blank, lineColor)
+			}
+
+			// Draw horizontal grid lines
+			for i := 0; i < linesH; i++ {
+				var lineColor rl.Color
+				if i%subdivs == 0 {
+					lineColor = rl.Fade(rl.GetColor(int32(GetStyle(Default, LineColorProp))), GridColorAlpha*4)
+				} else {
+					lineColor = rl.Fade(rl.GetColor(int32(GetStyle(Default, LineColorProp))), GridColorAlpha)
+				}
+				lineH := rl.Rectangle{bounds.X, bounds.Y + spacing*float32(i)/float32(subdivs), bounds.Width, 1}
+				DrawRectangle(lineH, 0, rl.Blank, lineColor)
+			}
+		}
+	default:
+	}
+
+	return currentCell
+}
+
+//----------------------------------------------------------------------------------
+// Styles loading functions
+//----------------------------------------------------------------------------------
+
+// TODO(port): GuiLoadStyle
 
 // Load style default over global style
 func LoadStyleDefault() {

@@ -126,3 +126,19 @@ func (t *TextBoxEx) Do(bounds rl.Rectangle, text string, textSize int) string {
 	}
 	return newText
 }
+
+type ScrollPanelEx struct {
+	Scroll rl.Vector2
+}
+
+// TODO: Make this respect 2D camera stuff
+func (s *ScrollPanelEx) Do(
+	bounds rl.Rectangle,
+	content rl.Rectangle,
+	draw func(start rl.Vector2, view rl.Rectangle),
+) {
+	view := ScrollPanel(bounds, content, &s.Scroll)
+	rl.BeginScissorMode(int32(view.X), int32(view.Y), int32(view.Width), int32(view.Height))
+	draw(rl.Vector2{view.X + s.Scroll.X, view.Y + s.Scroll.Y}, view)
+	rl.EndScissorMode()
+}

@@ -136,8 +136,6 @@ func doFrame() {
 			return false
 		})
 
-		displayLastResults()
-
 		// draw lines
 		for _, n := range nodes {
 			if n.Snapped {
@@ -257,7 +255,11 @@ func doFrame() {
 	raygui.Set2DCamera(nil)
 
 	drawToolbar()
+
+	drawLatestResults()
 }
+
+var blerp rl.Vector2
 
 func drawToolbar() {
 	toolbarWidth := int32(rl.GetScreenWidth())
@@ -351,13 +353,20 @@ func drawToolbar() {
 	}
 }
 
-func displayLastResults() {
+const latestResultsHeight = 500
+
+var latestResultsPanel raygui.ScrollPanelEx
+
+func drawLatestResults() {
 	// display query results (temporary)
 	if latestResult != nil {
-		const maxRows = 20
+		const charWidth = 11
+		const charHeight = 20
+		const cellPadding = 5
+		const rowHeight = cellPadding + charHeight + cellPadding
 
 		var rows [][]string
-		for i := -1; i < len(latestResult.Rows) && i < maxRows; i++ {
+		for i := -1; i < len(latestResult.Rows); i++ {
 			if i < 0 {
 				// headers
 				rows = append(rows, latestResult.Columns)
@@ -374,30 +383,38 @@ func displayLastResults() {
 		colWidths := make([]int, len(rows[0]))
 		for r := 0; r < len(rows); r++ {
 			for c := 0; c < len(rows[0]); c++ {
-				if colWidths[c] < len(rows[r][c]) {
-					colWidths[c] = len(rows[r][c])
+				thisColWidth := cellPadding + len(rows[r][c])*charWidth + cellPadding
+				if colWidths[c] < thisColWidth {
+					colWidths[c] = thisColWidth
 				}
 			}
 		}
 
-		// Pad out to full width
-		for _, row := range rows {
-			for i := range row {
-				for l := len(row[i]); l < colWidths[i]; l++ {
-					row[i] = row[i] + " "
+		totalWidth := 0
+		for _, w := range colWidths {
+			totalWidth += w
+		}
+
+		panelBounds := rl.Rectangle{0, screenHeight - latestResultsHeight, screenWidth, latestResultsHeight}
+		panelContents := rl.Rectangle{0, 0, float32(totalWidth), float32(len(rows) * rowHeight)}
+		latestResultsPanel.Do(panelBounds, panelContents, func(start rl.Vector2, view rl.Rectangle) {
+			cellPos := start
+			for _, row := range rows {
+				cellPos.X = 0
+				for i, cell := range row {
+					drawBasicText(cell, cellPos.X+cellPadding, cellPos.Y+cellPadding, charHeight, rl.Black)
+					cellPos.X += float32(colWidths[i])
 				}
+				rl.DrawLine(0, int32(cellPos.Y+rowHeight), int32(view.X+view.Width), int32(cellPos.Y+rowHeight), rl.LightGray)
+				cellPos.Y += rowHeight
 			}
-		}
 
-		rowPos := rl.Vector2{60, 480}
-		for _, row := range rows {
-			drawBasicText(strings.Join(row, " "), rowPos.X, rowPos.Y, 20, rl.Black)
-			rowPos.Y += 24
-		}
-
-		if len(latestResult.Rows) > maxRows {
-			drawBasicText(fmt.Sprintf("and %d more...", len(latestResult.Rows)-maxRows), rowPos.X, rowPos.Y, 20, rl.Black)
-		}
+			gridX := 0
+			for _, width := range colWidths {
+				gridX += width
+				rl.DrawLine(int32(gridX), int32(view.Y), int32(gridX), int32(view.Y+view.Height), rl.LightGray)
+			}
+		})
 	}
 }
 
