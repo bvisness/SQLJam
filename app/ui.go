@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/bvisness/SQLJam/raygui"
 	rl "github.com/gen2brain/raylib-go/raylib"
@@ -14,7 +13,7 @@ const UIFieldSpacing = 4
 func getSchemaOfSqlSource(src SqlSource) ([]string, error) {
 	srcToRun := src.SourceToSql(0)
 
-	if src.IsPure() {
+	if src.IsTable() {
 		srcToRun = fmt.Sprintf("SELECT * FROM %s", srcToRun)
 	}
 
@@ -27,24 +26,16 @@ func getSchemaOfSqlSource(src SqlSource) ([]string, error) {
 	return rows.Columns()
 }
 
-func getSchema(n *Node) ([]string, error) {
+func getSchema(n *Node) []string {
 	ctx := NewQueryContextFromNode(n)
-	var colsToShow = make([]string, 0)
+	var colsToShow []string
 
-	currentSourceCols, _ := getSchemaOfSqlSource(ctx.Source)
-
+	currentSourceCols, _ := getSchemaOfSqlSource(ctx)
 	for _, col := range currentSourceCols {
-		colsToShow = append(colsToShow, ctx.SourceAlias() + "." +col)
+		colsToShow = append(colsToShow, col)
 	}
 
-	for _, join := range ctx.Joins {
-		joinCols, _ := getSchemaOfSqlSource(join.Source)
-		for _, col := range joinCols {
-			colsToShow = append(colsToShow, join.Source.SourceAlias() + "." + col)
-		}
-	}
-
-	return colsToShow, nil
+	return colsToShow
 }
 
 var errorOpts = []raygui.DropdownExOption{{"ERROR", "ERROR"}}
@@ -57,17 +48,12 @@ func columnNameDropdownOpts(inputNode *Node) []raygui.DropdownExOption {
 	}
 
 	var opts []raygui.DropdownExOption
-	schemaCols, err := getSchema(inputNode)
-	if err == nil {
-		for _, col := range schemaCols {
-			opts = append(opts, raygui.DropdownExOption{
-				Name:  col,
-				Value: col,
-			})
-		}
-	} else {
-		log.Print(err)
-		return errorOpts
+	schemaCols := getSchema(inputNode)
+	for _, col := range schemaCols {
+		opts = append(opts, raygui.DropdownExOption{
+			Name:  col,
+			Value: col,
+		})
 	}
 
 	return opts

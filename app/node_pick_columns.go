@@ -7,8 +7,6 @@ import (
 
 type PickColumns struct {
 	NodeData
-	Alias string
-
 	Entries []*PickColumnsEntry
 }
 

@@ -7,9 +7,8 @@ import (
 
 type SqlSource interface {
 	SourceToSql(indent int) string
-	SourceAlias() string
 	SourceTableName() string
-	IsPure() bool
+	IsTable() bool
 }
 
 // QueryContext A context for node generation recursion.
@@ -17,15 +16,14 @@ type SqlSource interface {
 // we continue recursive generation with a new Source context object.
 // Thus this is basically a recursive tree
 type QueryContext struct {
-	Alias  string
 	Source SqlSource // or NodeGenContext
 
 	// Picked columns and aggregates are mutually exclusive.
-	Cols      []string
-	ColAliases []string
+	Cols      []GenColumn
 	Aggregate *GenAggregate
 
 	Combines         []GenCombine
+	JoinSourceAlias  string
 	Joins            []GenJoin
 	WhereConditions  []string
 	HavingConditions []string
@@ -34,11 +32,7 @@ type QueryContext struct {
 
 var _ SqlSource = &QueryContext{}
 
-func (ctx *QueryContext) SourceAlias() string {
-	return "a"
-}
-
-func (ctx *QueryContext) IsPure() bool {
+func (ctx *QueryContext) IsTable() bool {
 	return false
 }
 
@@ -70,6 +64,10 @@ func WrapQueryContext(ctx *QueryContext) *QueryContext {
 	}
 }
 
+type GenColumn struct {
+	Col   string
+	Alias string
+}
 
 type GenAggregate struct {
 	GroupByCols []string
@@ -93,10 +91,10 @@ type GenOrder struct {
 }
 
 type GenJoin struct {
-	Source    SqlSource
-	Condition string
 	Type      JoinType
-	Alias 	  string
+	Source    SqlSource
+	Alias     string
+	Condition string
 }
 
 func indented(s string, amount int) string {
@@ -165,12 +163,12 @@ func (ctx *QueryContext) SourceToSql(indent int) string {
 			sql += "*"
 		} else {
 			colStrings := make([]string, len(ctx.Cols))
-			for i, _ := range ctx.Cols {
+			for i, col := range ctx.Cols {
 				aliasStr := ""
-				if ctx.ColAliases[i] != "" {
-					aliasStr = fmt.Sprintf(" AS %s", ctx.ColAliases[i])
+				if col.Alias != "" {
+					aliasStr = fmt.Sprintf(" AS %s", col.Alias)
 				}
-				colStrings[i] = fmt.Sprintf("%s%s", ctx.Cols[i], aliasStr)
+				colStrings[i] = fmt.Sprintf("%s%s", col.Col, aliasStr)
 			}
 			sql += strings.Join(colStrings, ", ")
 		}
@@ -179,27 +177,29 @@ func (ctx *QueryContext) SourceToSql(indent int) string {
 			return indented("Error: No SQL Source", indent)
 		} else {
 			sql += "\n" + indented("", indent)
-			if ctx.Source.IsPure() {
+			if ctx.Source.IsTable() {
 				sql += fmt.Sprintf("FROM %s", ctx.Source.SourceToSql(0))
-			}else {
-				sql += fmt.Sprintf("FROM (\n%s", ctx.Source.SourceToSql(indent + 1))
+			} else {
+				sql += fmt.Sprintf("FROM (\n%s", ctx.Source.SourceToSql(indent+1))
 				sql += "\n" + indented(")", indent)
 			}
-			// TODO no table src alias right now
-			sql += " AS " + ctx.Source.SourceAlias()
 		}
 
 		// JOIN
+		if ctx.JoinSourceAlias != "" {
+			sql += fmt.Sprintf(" AS %s", ctx.JoinSourceAlias)
+		}
 		for _, join := range ctx.Joins {
 			sql += "\n" + indented(join.Type.String(), indent) + " "
-			if join.Source.IsPure() {
-				sql += join.Source.SourceToSql(indent)
+			if join.Source.IsTable() {
+				sql += join.Source.(*Table).Table
 			} else {
-				sql += "(\n" + join.Source.SourceToSql(indent + 1)
+				sql += "(\n" + join.Source.SourceToSql(indent+1)
 				sql += "\n" + indented(")", indent)
 			}
-			// TODO no table src alias right now
-			sql += fmt.Sprintf(" AS %s", join.Alias)
+			if join.Alias != "" {
+				sql += fmt.Sprintf(" AS %s", join.Alias)
+			}
 			if join.Condition != "" {
 				sql += fmt.Sprintf(" ON %s", join.Condition)
 			}
@@ -252,8 +252,12 @@ func (ctx *QueryContext) CreateQuery(n *Node) *QueryContext {
 			ctx = WrapQueryContext(ctx)
 		}
 
-		ctx.Cols = d.Cols()
-		ctx.ColAliases = d.Aliases()
+		for _, entry := range d.Entries {
+			ctx.Cols = append(ctx.Cols, GenColumn{
+				Col:   entry.Col,
+				Alias: entry.Alias,
+			})
+		}
 	case *Filter:
 		ctx = ctx.CreateQuery(n.Inputs[0])
 		if len(ctx.Cols) > 0 {
@@ -295,34 +299,96 @@ func (ctx *QueryContext) CreateQuery(n *Node) *QueryContext {
 			}
 		}
 	case *Join:
-		if n.Inputs[0] != nil {
-			if table, ok := n.Inputs[0].Data.(*Table); ok {
-				ctx = NewQueryContext()
-				ctx.Source = table
-			} else {
-				firstCtx := NewQueryContextFromNode(n.Inputs[0])
-				ctx = WrapQueryContext(firstCtx)
+		if n.Inputs[0] == nil {
+			break
+		}
+
+		/*
+			We get our list of column names by getting the schemas of all our
+			inputs and concatenating the lists together. We then have to
+			resolve duplicate column names - if there are no duplicates, we
+			can do SELECT * as usual, but if there are, we need to generate a
+			list of column names like "a.film_id AS a_film_id, b.film_id AS
+			b_film_id, ...".
+		*/
+		type inputSchema struct {
+			Alias       string
+			ColumnNames []string
+		}
+		var inputSchemas []inputSchema
+
+		if table, ok := n.Inputs[0].Data.(*Table); ok {
+			ctx = NewQueryContext()
+			ctx.Source = table
+		} else {
+			firstCtx := NewQueryContextFromNode(n.Inputs[0])
+			ctx = WrapQueryContext(firstCtx)
+		}
+
+		ctx.JoinSourceAlias = d.FirstAlias
+		inputSchemas = append(inputSchemas, inputSchema{
+			Alias:       d.FirstAlias,
+			ColumnNames: getSchema(n.Inputs[0]),
+		})
+
+		// All other inputs get thrown into a new recursive context
+		for i, input := range n.Inputs[1:] {
+			if input == nil {
+				continue
 			}
 
-			// All other inputs get thrown into a new recursive context
-			for i, input := range n.Inputs[1:] {
-				if input != nil {
-					aliasChar := string(rune('b' + i))
-					cond := d.Conditions[i]
-					var source *QueryContext
-					if table, ok := input.Data.(*Table); ok {
-						table.Alias = aliasChar
-						source = NewQueryContextFromNode(input)
-					} else {
-						newQuery := NewQueryContextFromNode(input)
-						//newQuery.Alias = aliasChar
-						source = newQuery
+			alias := d.Conditions[i].Alias
+
+			inputSchemas = append(inputSchemas, inputSchema{
+				Alias:       alias,
+				ColumnNames: getSchema(input),
+			})
+
+			var source SqlSource
+			if table, ok := input.Data.(*Table); ok {
+				source = table
+			} else {
+				source = NewQueryContextFromNode(input)
+			}
+
+			cond := d.Conditions[i]
+			ctx.Joins = append(ctx.Joins, GenJoin{
+				Source:    source,
+				Condition: cond.Condition,
+				Type:      cond.Type(),
+				Alias:     alias,
+			})
+		}
+
+		colCounts := map[string]int{}
+		for _, schema := range inputSchemas {
+			for _, col := range schema.ColumnNames {
+				current, _ := colCounts[col]
+				colCounts[col] = current + 1
+			}
+		}
+
+		anyDuplicates := false
+		for _, count := range colCounts {
+			if count > 1 {
+				anyDuplicates = true
+				break
+			}
+		}
+
+		if anyDuplicates {
+			for _, schema := range inputSchemas {
+				for _, col := range schema.ColumnNames {
+					specificCol := fmt.Sprintf("%s.%s", schema.Alias, col)
+
+					alias := ""
+					if colCounts[col] > 1 {
+						alias = fmt.Sprintf("%s_%s", schema.Alias, col)
 					}
-					ctx.Joins = append(ctx.Joins, GenJoin{
-						Source:    source,
-						Condition: cond.Condition,
-						Type:      cond.Type(),
-						Alias: aliasChar,
+
+					ctx.Cols = append(ctx.Cols, GenColumn{
+						Col:   specificCol,
+						Alias: alias,
 					})
 				}
 			}

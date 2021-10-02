@@ -6,7 +6,6 @@ import (
 )
 
 type Aggregate struct {
-	Alias      string
 	Aggregates []*AggregateColumn
 	GroupBys   []*AggregateGroupBy
 }

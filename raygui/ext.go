@@ -103,7 +103,7 @@ func GetOpenDropdown(dropdowns []*DropdownEx) (*DropdownEx, bool) {
 }
 
 type TextBoxEx struct {
-	active bool
+	Active bool
 }
 
 func NewTextBoxEx() TextBoxEx {
@@ -120,9 +120,9 @@ func MakeTextBoxExList(n int) []*TextBoxEx {
 }
 
 func (t *TextBoxEx) Do(bounds rl.Rectangle, text string, textSize int) string {
-	newText, toggle := TextBox(bounds, text, textSize, t.active)
+	newText, toggle := TextBox(bounds, text, textSize, t.Active)
 	if toggle {
-		t.active = !t.active
+		t.Active = !t.Active
 	}
 	return newText
 }

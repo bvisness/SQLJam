@@ -10,7 +10,6 @@ import (
 type Table struct {
 	NodeData
 	SqlSource
-	Alias string
 	Table string
 
 	// UI data
@@ -32,11 +31,7 @@ func (t *Table) SourceToSql(indent int) string {
 	return t.Table
 }
 
-func (t *Table) SourceAlias() string {
-	return "a"
-}
-
-func (t *Table) IsPure() bool {
+func (t *Table) IsTable() bool {
 	return true
 }
 

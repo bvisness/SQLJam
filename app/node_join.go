@@ -7,14 +7,18 @@ import (
 
 type Join struct {
 	NodeData
-	Conditions []*JoinCondition
+	FirstAlias        string
+	FirstAliasTextbox raygui.TextBoxEx
+	Conditions        []*JoinCondition
 }
 
 type JoinCondition struct {
-	Condition string
-	Left      bool
-	Right     bool
-	TextBox   raygui.TextBoxEx
+	Alias            string
+	Condition        string
+	Left             bool
+	Right            bool
+	AliasTextBox     raygui.TextBoxEx
+	ConditionTextBox raygui.TextBoxEx
 }
 
 type JoinType int
@@ -68,35 +72,71 @@ func (jt JoinType) String() string {
 func (d *Join) Update(n *Node) {
 	n.InputPinHeights = make([]int, len(n.Inputs))
 
-	uiHeight := UIFieldHeight // blank space for first table input
 	n.InputPinHeights[0] = 0
+	uiHeight := UIFieldHeight + UIFieldSpacing*2 // first input (no condition)
 
-	for i := range n.Inputs[1:] {
-		uiHeight += UIFieldSpacing
-		n.InputPinHeights[i+1] = uiHeight
-		uiHeight += UIFieldHeight
+	if d.FirstAlias == "" && !d.FirstAliasTextbox.Active {
+		d.FirstAlias = "a"
 	}
 
-	uiHeight += UIFieldSpacing + UIFieldHeight // +/- buttons
+	for i := range n.Inputs[1:] {
+		n.InputPinHeights[i+1] = uiHeight
+		uiHeight += UIFieldHeight + UIFieldSpacing   // alias field
+		uiHeight += UIFieldHeight + 2*UIFieldSpacing // condition field
+
+		cond := d.Conditions[i]
+		if cond.Alias == "" && !cond.AliasTextBox.Active {
+			cond.Alias = string(rune('b' + i))
+		}
+	}
+
+	uiHeight += UIFieldHeight // +/- buttons
 
 	n.UISize = rl.Vector2{300, float32(uiHeight)}
 }
 
 func (d *Join) DoUI(n *Node) {
-	fieldY := n.UIRect.Y + UIFieldHeight + UIFieldSpacing
+	fieldY := n.UIRect.Y
+
+	// first alias
+	{
+		aliasRect := rl.Rectangle{
+			n.UIRect.X,
+			float32(fieldY),
+			n.UIRect.Width,
+			UIFieldHeight,
+		}
+		rl.DrawRectangleRec(aliasRect, rl.White)
+		d.FirstAlias = d.FirstAliasTextbox.Do(aliasRect, d.FirstAlias, 100)
+	}
+
+	fieldY += UIFieldHeight + 2*UIFieldSpacing
 
 	uiRight := n.UIRect.X + n.UIRect.Width
 	boxWidth := n.UIRect.Width - (UIFieldSpacing+UIFieldHeight)*2
 
 	for _, condition := range d.Conditions {
-		boxRect := rl.Rectangle{
+		// alias
+		aliasRect := rl.Rectangle{
+			n.UIRect.X,
+			float32(fieldY),
+			n.UIRect.Width,
+			UIFieldHeight,
+		}
+		rl.DrawRectangleRec(aliasRect, rl.White)
+		condition.Alias = condition.AliasTextBox.Do(aliasRect, condition.Alias, 100)
+
+		fieldY += UIFieldHeight + UIFieldSpacing
+
+		// condition
+		conditionRect := rl.Rectangle{
 			n.UIRect.X,
 			float32(fieldY),
 			boxWidth,
 			UIFieldHeight,
 		}
-		rl.DrawRectangleRec(boxRect, rl.White)
-		condition.Condition = condition.TextBox.Do(boxRect, condition.Condition, 100)
+		rl.DrawRectangleRec(conditionRect, rl.White)
+		condition.Condition = condition.ConditionTextBox.Do(conditionRect, condition.Condition, 100)
 		condition.Left = raygui.Toggle(rl.Rectangle{
 			uiRight - (UIFieldHeight + UIFieldSpacing + UIFieldHeight),
 			float32(fieldY),
@@ -114,7 +154,7 @@ func (d *Join) DoUI(n *Node) {
 		}
 		raygui.Enable()
 
-		fieldY += UIFieldHeight + UIFieldSpacing
+		fieldY += UIFieldHeight + 2*UIFieldSpacing
 	}
 
 	if raygui.Button(rl.Rectangle{
