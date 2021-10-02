@@ -40,6 +40,10 @@ func (t *Table) IsPure() bool {
 	return true
 }
 
+func (t *Table) SourceTableName() string {
+	return t.Table
+}
+
 func (t *Table) Update(n *Node) {
 	// init dropdown
 	if len(t.TableDropdown.GetOptions()) == 0 {

@@ -8,6 +8,7 @@ import (
 type SqlSource interface {
 	SourceToSql(indent int) string
 	SourceAlias() string
+	SourceTableName() string
 	IsPure() bool
 }
 
@@ -39,6 +40,10 @@ func (ctx *QueryContext) SourceAlias() string {
 
 func (ctx *QueryContext) IsPure() bool {
 	return false
+}
+
+func (ctx *QueryContext) SourceTableName() string {
+	return ctx.Source.SourceTableName()
 }
 
 // NewQueryContext Creates an empty query context.
@@ -180,6 +185,7 @@ func (ctx *QueryContext) SourceToSql(indent int) string {
 				sql += fmt.Sprintf("FROM (\n%s", ctx.Source.SourceToSql(indent + 1))
 				sql += "\n" + indented(")", indent)
 			}
+			// TODO no table src alias right now
 			sql += " AS " + ctx.Source.SourceAlias()
 		}
 
@@ -192,6 +198,7 @@ func (ctx *QueryContext) SourceToSql(indent int) string {
 				sql += "(\n" + join.Source.SourceToSql(indent + 1)
 				sql += "\n" + indented(")", indent)
 			}
+			// TODO no table src alias right now
 			sql += fmt.Sprintf(" AS %s", join.Alias)
 			if join.Condition != "" {
 				sql += fmt.Sprintf(" ON %s", join.Condition)

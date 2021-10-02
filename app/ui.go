@@ -11,8 +11,12 @@ import (
 const UIFieldHeight = 24
 const UIFieldSpacing = 4
 
-func getSchemaOfQueryContext(ctx *QueryContext) ([]string, error) {
-	srcToRun := ctx.SourceToSql(0)
+func getSchemaOfSqlSource(src SqlSource) ([]string, error) {
+	srcToRun := src.SourceToSql(0)
+
+	if src.IsPure() {
+		srcToRun = fmt.Sprintf("SELECT * FROM %s", srcToRun)
+	}
 
 	rows, err := db.Query(srcToRun + " LIMIT 0")
 	if err != nil {
@@ -27,29 +31,16 @@ func getSchema(n *Node) ([]string, error) {
 	ctx := NewQueryContextFromNode(n)
 	var colsToShow = make([]string, 0)
 
-	// ### Get CURRENT source rows ###
+	currentSourceCols, _ := getSchemaOfSqlSource(ctx.Source)
 
-	var currentSourceRows []string
-
-	// TODO figure out why we're grabbing 2x as many current ctx columns as needed
-
-	if len(ctx.Cols) == 0 {
-		currentSourceRows, _ = getSchemaOfQueryContext(ctx)
-	} else {
-		currentSourceRows = ctx.Cols
+	for _, col := range currentSourceCols {
+		colsToShow = append(colsToShow, ctx.SourceAlias() + "." +col)
 	}
 
-	for _, row := range currentSourceRows {
-		colsToShow = append(colsToShow, ctx.SourceAlias()+"."+row)
-	}
-
-	// ### Get JOIN source rows ###
-
-	for i, join := range ctx.Joins {
-		input := n.Inputs[i+1]
-		joinCols, _ := getSchemaOfQueryContext(NewQueryContextFromNode(input))
+	for _, join := range ctx.Joins {
+		joinCols, _ := getSchemaOfSqlSource(join.Source)
 		for _, col := range joinCols {
-			colsToShow = append(colsToShow, join.Alias+"."+col)
+			colsToShow = append(colsToShow, join.Source.SourceAlias() + "." + col)
 		}
 	}
 
