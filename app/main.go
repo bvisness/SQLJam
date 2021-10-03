@@ -279,6 +279,8 @@ func doFrame() {
 				drawBasicText(n.Title, nodeRect.X+6, nodeRect.Y+3, titleHeight, Shade(n.Color, 0.4))
 				drawBasicText("P", previewRect.X+3, previewRect.Y+5, 28, Shade(n.Color, 0.4))
 
+				pinHoverColor := Tint(pinColor, 0.5)
+
 				for i, pinPos := range n.InputPinPos {
 					if n.Snapped && i == 0 {
 						continue
@@ -288,7 +290,7 @@ func doFrame() {
 
 					pinColor := pinColor
 					if isHoverPin {
-						pinColor = Tint(pinColor, 0.5)
+						pinColor = pinHoverColor
 					}
 					drawPin(pinPos, false, pinColor)
 
@@ -302,8 +304,13 @@ func doFrame() {
 					}
 				}
 				if !n.HasChildren {
+					isHoverPin := rl.CheckCollisionPointRec(raygui.GetMousePositionWorld(), getPinRect(n.OutputPinPos, true))
+					pinColor := pinColor
+					if isHoverPin {
+						pinColor = pinHoverColor
+					}
 					drawPin(n.OutputPinPos, true, pinColor)
-					if rl.CheckCollisionPointRec(raygui.GetMousePositionWorld(), getPinRect(n.OutputPinPos, true)) && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
+					if isHoverPin && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
 						tryDragNewWire(n)
 					}
 				}
@@ -368,15 +375,20 @@ func drawToolbar() {
 
 	buttHeight := 40 // thicc
 
+	initNewNode := func(n *Node, defaultSize rl.Vector2) {
+		n.Pos = rl.Vector2Subtract(cam.Target, rl.Vector2DivideV(defaultSize, rl.Vector2{2, 2}))
+		n.Sort = nodeSortTop()
+	}
+
 	if raygui.Button(rl.Rectangle{
 		X:      20,
 		Y:      float32(toolbarHeight/2) - float32(buttHeight/2),
 		Width:  160,
 		Height: float32(buttHeight),
 	}, "Add Table") {
-		table := NewTable()
-		table.Pos = rl.Vector2{400, 400}
-		nodes = append(nodes, table)
+		n := NewTable()
+		initNewNode(n, rl.Vector2{300, 100})
+		nodes = append(nodes, n)
 	}
 
 	if raygui.Button(rl.Rectangle{
@@ -385,9 +397,9 @@ func drawToolbar() {
 		Width:  180,
 		Height: float32(buttHeight),
 	}, "Add Filter") {
-		filter := NewFilter()
-		filter.Pos = rl.Vector2{400, 400}
-		nodes = append(nodes, filter)
+		n := NewFilter()
+		initNewNode(n, rl.Vector2{400, 100})
+		nodes = append(nodes, n)
 	}
 
 	if raygui.Button(rl.Rectangle{
@@ -396,9 +408,9 @@ func drawToolbar() {
 		Width:  260,
 		Height: float32(buttHeight),
 	}, "Add Pick Columns") {
-		pc := NewPickColumns()
-		pc.Pos = rl.Vector2{400, 400}
-		nodes = append(nodes, pc)
+		n := NewPickColumns()
+		initNewNode(n, rl.Vector2{450, 200})
+		nodes = append(nodes, n)
 	}
 
 	if raygui.Button(rl.Rectangle{
@@ -407,9 +419,9 @@ func drawToolbar() {
 		Width:  260,
 		Height: float32(buttHeight),
 	}, "Add Combine Rows") {
-		cr := NewCombineRows(Union)
-		cr.Pos = rl.Vector2{400, 400}
-		nodes = append(nodes, cr)
+		n := NewCombineRows(Union)
+		initNewNode(n, rl.Vector2{300, 150})
+		nodes = append(nodes, n)
 	}
 
 	if raygui.Button(rl.Rectangle{
@@ -418,9 +430,9 @@ func drawToolbar() {
 		Width:  160,
 		Height: float32(buttHeight),
 	}, "Add Order") {
-		pc := NewOrder()
-		pc.Pos = rl.Vector2{400, 400}
-		nodes = append(nodes, pc)
+		n := NewOrder()
+		initNewNode(n, rl.Vector2{350, 150})
+		nodes = append(nodes, n)
 	}
 
 	if raygui.Button(rl.Rectangle{
@@ -429,9 +441,9 @@ func drawToolbar() {
 		Width:  140,
 		Height: float32(buttHeight),
 	}, "Add Join") {
-		pc := NewJoin()
-		pc.Pos = rl.Vector2{400, 400}
-		nodes = append(nodes, pc)
+		n := NewJoin()
+		initNewNode(n, rl.Vector2{600, 200})
+		nodes = append(nodes, n)
 	}
 
 	if raygui.Button(rl.Rectangle{
@@ -440,9 +452,9 @@ func drawToolbar() {
 		Width:  220,
 		Height: float32(buttHeight),
 	}, "Add Aggregate") {
-		pc := NewAggregate()
-		pc.Pos = rl.Vector2{400, 400}
-		nodes = append(nodes, pc)
+		n := NewAggregate()
+		initNewNode(n, rl.Vector2{600, 200})
+		nodes = append(nodes, n)
 	}
 }
 
