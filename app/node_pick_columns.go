@@ -21,7 +21,7 @@ func NewPickColumns() *Node {
 	return &Node{
 		Title:   "Pick Columns",
 		CanSnap: true,
-		Color:   rl.NewColor(255,122,125, 255),
+		Color:   rl.NewColor(255, 122, 125, 255),
 		Inputs:  make([]*Node, 1),
 		Data: &PickColumns{
 			Entries: []*PickColumnsEntry{{}},
@@ -65,7 +65,11 @@ func (p *PickColumns) Update(n *Node) {
 
 	opts := columnNameDropdownOpts(n.Inputs[0])
 	for _, entry := range p.Entries {
-		entry.ColDropdown.SetOptions(opts...)
+		if len(opts) == 0 {
+			entry.ColDropdown.SetOptions(errorOpts...)
+		} else {
+			entry.ColDropdown.SetOptions(opts...)
+		}
 	}
 }
 
