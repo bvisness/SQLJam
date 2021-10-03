@@ -121,18 +121,18 @@ func doFrame() {
 				zoomFactor = 0
 			}
 			zoom = zoom * (1 + zoomFactor) // actual zoom does not snap
+			if zoom < minZoom {
+				zoom = minZoom
+			}
+			if zoom > maxZoom {
+				zoom = maxZoom
+			}
 			snappedZoom := zoom
 			for _, snapPoint := range zoomSnapPoints {
 				if Abs(snappedZoom-snapPoint) <= snapPoint*zoomSnapRadius {
 					snappedZoom = snapPoint
 					break
 				}
-			}
-			if snappedZoom < minZoom {
-				snappedZoom = minZoom
-			}
-			if snappedZoom > maxZoom {
-				snappedZoom = maxZoom
 			}
 			cam.Zoom = snappedZoom
 			zoomAfter := cam.Zoom
