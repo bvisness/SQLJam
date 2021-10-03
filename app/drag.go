@@ -24,7 +24,8 @@ func getDragKey(key interface{}) string {
 	}
 }
 
-// Call once per frame at the start of the frame.
+// Call once per frame at the start of the frame. MAKE SURE THAT YOU DO THIS
+// WHEN THE RAYGUI 2D CAMERA IS SET.
 func updateDrag() {
 	if rl.IsKeyPressed(rl.KeyEscape) {
 		dragging = false

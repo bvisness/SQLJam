@@ -28,8 +28,8 @@ var mainColorLight = rl.RayWhite
 var mainColorDark = rl.NewColor(46, 34, 47, 255)
 var pinColor = rl.NewColor(123, 107, 127, 255)
 
-var PaneFontColor = rl.NewColor(253,203,176,255)
-var PaneLineColor = rl.NewColor(139,94,91,255)
+var PaneFontColor = rl.NewColor(253, 203, 176, 255)
+var PaneLineColor = rl.NewColor(139, 94, 91, 255)
 
 func MainColor() rl.Color {
 	if dark {
@@ -121,8 +121,6 @@ func doFrame() {
 
 	rl.ClearBackground(MainColor())
 
-	updateDrag()
-
 	DoPane(rl.Rectangle{0, 0, screenWidth, screenHeight - resultsCurrentHeight}, func(p Pane) {
 		// Pan/zoom camera
 		{
@@ -185,6 +183,8 @@ func doFrame() {
 		raygui.Set2DCamera(&cam)
 		rl.BeginMode2D(cam)
 		{
+			updateDrag()
+
 			sort.SliceStable(nodes, func(i, j int) bool {
 				/*
 					A node should be less than another in the draw order if it
