@@ -119,12 +119,12 @@ func MakeTextBoxExList(n int) []*TextBoxEx {
 	return list
 }
 
-func (t *TextBoxEx) Do(bounds rl.Rectangle, text string, textSize int) string {
+func (t *TextBoxEx) Do(bounds rl.Rectangle, text string, textSize int) (string, bool) {
 	newText, toggle := TextBox(bounds, text, textSize, t.Active)
 	if toggle {
 		t.Active = !t.Active
 	}
-	return newText
+	return newText, toggle && !t.Active // returns true if unfocusing
 }
 
 type ScrollPanelEx struct {

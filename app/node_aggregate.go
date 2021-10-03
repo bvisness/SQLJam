@@ -198,7 +198,7 @@ func (d *Aggregate) DoUI(n *Node) {
 				fieldX += fieldWidth + UIFieldSpacing
 
 				aliasRect := rl.Rectangle{fieldX, fieldY, fieldWidth, UIFieldHeight}
-				agg.Alias = agg.AliasTextbox.Do(aliasRect, agg.Alias, 100)
+				agg.Alias, _ = agg.AliasTextbox.Do(aliasRect, agg.Alias, 100)
 			}()
 		}
 	}

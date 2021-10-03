@@ -28,8 +28,7 @@ func (d *Filter) Update(n *Node) {
 }
 
 func (d *Filter) DoUI(n *Node) {
-	//rl.DrawRectangleRec(n.UIRect, rl.White)
-	d.Conditions = d.TextBox.Do(n.UIRect, d.Conditions, 100)
+	d.Conditions, _ = d.TextBox.Do(n.UIRect, d.Conditions, 100)
 }
 
 func (d *Filter) Serialize() string {

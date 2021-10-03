@@ -108,7 +108,7 @@ func (d *Join) DoUI(n *Node) {
 			n.UIRect.Width,
 			UIFieldHeight,
 		}
-		d.FirstAlias = d.FirstAliasTextbox.Do(aliasRect, d.FirstAlias, 100)
+		d.FirstAlias, _ = d.FirstAliasTextbox.Do(aliasRect, d.FirstAlias, 100)
 	}
 
 	fieldY += UIFieldHeight + 2*UIFieldSpacing
@@ -124,7 +124,7 @@ func (d *Join) DoUI(n *Node) {
 			n.UIRect.Width,
 			UIFieldHeight,
 		}
-		condition.Alias = condition.AliasTextBox.Do(aliasRect, condition.Alias, 100)
+		condition.Alias, _ = condition.AliasTextBox.Do(aliasRect, condition.Alias, 100)
 
 		fieldY += UIFieldHeight + UIFieldSpacing
 
@@ -135,7 +135,7 @@ func (d *Join) DoUI(n *Node) {
 			boxWidth,
 			UIFieldHeight,
 		}
-		condition.Condition = condition.ConditionTextBox.Do(conditionRect, condition.Condition, 100)
+		condition.Condition, _ = condition.ConditionTextBox.Do(conditionRect, condition.Condition, 100)
 		condition.Left = raygui.Toggle(rl.Rectangle{
 			uiRight - (UIFieldHeight + UIFieldSpacing + UIFieldHeight),
 			float32(fieldY),

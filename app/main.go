@@ -13,7 +13,7 @@ var screenWidth = float32(1920)
 var screenHeight = float32(1080)
 
 const resultsMaxHeight = 400
-const currentSQLWidth = 500
+const currentSQLWidth = 640
 
 const dividerThickness = 4
 const pinRadius = 8
@@ -40,19 +40,12 @@ func MainColor() rl.Color {
 	}
 }
 
-func TextColor() rl.Color {
-	if dark {
-		return mainColorLight
-	} else {
-		return mainColorDark
-	}
-}
-
 // LoadStyleMain Per frame custom style settings
 func LoadStyleMain() {
 	raygui.SetFont(font)
+	raygui.SetStyle(raygui.Default, raygui.BorderWidthProp, 2)
+
 	raygui.SetStyle(raygui.ScrollBarControl, raygui.ArrowsVisible, 1)
-	raygui.SetStyle(raygui.DropdownBoxControl, raygui.BorderWidthProp, 2)
 	raygui.SetStyle(raygui.DropdownBoxControl, raygui.DropdownItemsPadding, 0)
 	raygui.SetStyle(raygui.TextBoxControl, raygui.BorderWidthProp, 2)
 
@@ -71,6 +64,25 @@ func LoadStyleMain() {
 	SetStyleColor(raygui.SliderControl, raygui.BaseColorNormalProp, Tint(MainColor(), 0.3))
 
 	raygui.SetStyle(raygui.ListViewControl, raygui.ScrollBarWidth, 20)
+
+}
+
+func MarkInspectorDirtyCurrent() {
+	MarkInspectorDirty(selectedNode)
+}
+
+func MarkInspectorDirty(n *Node) {
+	selectedNode = n
+	inspectorDirty = true
+}
+
+func UpdateInspectorIfNeeded() {
+	if inspectorDirty && selectedNode != nil {
+		sql := selectedNode.GenerateSql()
+		currentSQL = sql
+		resultsOpen = true
+		setLatestResult(doQuery(sql))
+	}
 }
 
 func Main() {
@@ -80,7 +92,7 @@ func Main() {
 
 	//monitorHeight := rl.GetMonitorHeight(rl.GetCurrentMonitor())
 	//rl.SetWindowSize(screenWidth, monitorHeight)
-	dpi := rl.GetWindowScaleDPI()
+	//dpi := rl.GetWindowScaleDPI()
 	monWidth := float32(rl.GetMonitorWidth(rl.GetCurrentMonitor()))
 	monHeight := float32(rl.GetMonitorHeight(rl.GetCurrentMonitor()))
 	rl.SetWindowSize(int(monWidth*0.8), int(monHeight*0.8))
@@ -115,6 +127,8 @@ var panMouseStart rl.Vector2
 var panCamStart rl.Vector2
 
 var currentSQL string
+var selectedNode *Node
+var inspectorDirty bool
 
 const minZoom = 0.25
 const maxZoom = 4
@@ -251,7 +265,10 @@ func doFrame() {
 		rl.EndMode2D()
 		raygui.Set2DCamera(nil)
 
+		UpdateInspectorIfNeeded()
+
 		drawToolbar()
+
 	})
 
 	drawLatestResults()
@@ -385,12 +402,22 @@ func drawCurrentSQL() {
 		dividerThickness, rl.Black,
 	)
 	DoPane(rl.Rectangle{screenWidth - currentSQLWidth + dividerThickness, screenHeight - resultsCurrentHeight, currentSQLWidth - dividerThickness, resultsMaxHeight}, func(p Pane) {
-		const copyButtonHeight = 40
+		const headerHeight = 40
+		const bottomButtonHeights = 40
 		const padding = 6
 		const fontSize = 20
 		const lineHeight = 24
 
 		rl.DrawRectangleRec(p.Bounds, MainColor())
+
+		topBounds := p.Bounds
+		topBounds.Height = headerHeight
+
+		if selectedNode != nil {
+			rl.DrawRectangleRec(topBounds, selectedNode.Color)
+			centerOffset := topBounds.Width / 2 - float32(raygui.GetTextWidth(selectedNode.Title)) / 2
+			drawBasicText(selectedNode.Title, topBounds.X + centerOffset, topBounds.Y + 5, 32, Brightness(selectedNode.Color, 0.45))
+		}
 
 		lines := strings.Split(currentSQL, "\n")
 
@@ -403,7 +430,8 @@ func drawCurrentSQL() {
 		}
 
 		scrollPanelBounds := p.Bounds
-		scrollPanelBounds.Height = p.Bounds.Height - copyButtonHeight
+		scrollPanelBounds.Height = p.Bounds.Height - bottomButtonHeights - headerHeight
+		scrollPanelBounds.Y += headerHeight
 		currentSQLPanel.Do(
 			scrollPanelBounds,
 			rl.Rectangle{
@@ -418,8 +446,33 @@ func drawCurrentSQL() {
 			},
 		)
 
-		if raygui.Button(rl.Rectangle{p.Bounds.X, p.Bounds.Y + p.Bounds.Height - copyButtonHeight, p.Bounds.Width, copyButtonHeight}, "Copy") {
+		if raygui.Button(rl.Rectangle{p.Bounds.X, p.Bounds.Y + p.Bounds.Height - bottomButtonHeights, p.Bounds.Width / 2, bottomButtonHeights}, "Copy Text") {
 			rl.SetClipboardText(currentSQL)
+		}
+		if raygui.Button(rl.Rectangle{p.Bounds.X + p.Bounds.Width / 2, p.Bounds.Y + p.Bounds.Height - bottomButtonHeights, p.Bounds.Width / 2, bottomButtonHeights}, "Delete Node") {
+			for i, scanNode := range nodes {
+
+				for k, input := range scanNode.Inputs {
+					if input == selectedNode {
+						if len(selectedNode.Inputs) == 1 {
+							scanNode.Inputs[k] = selectedNode.Inputs[0]
+						} else {
+							scanNode.Inputs[k] = nil
+						}
+						if scanNode.Inputs[k] == nil {
+							scanNode.Snapped = false
+						}
+					}
+				}
+
+				if scanNode == selectedNode {
+					nodes = append(nodes[:i], nodes[i+1:]...)
+				}
+
+			}
+
+			selectedNode = nil
+			resultsOpen = false
 		}
 	})
 }

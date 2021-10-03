@@ -59,6 +59,7 @@ func (n *Node) Update() {
 
 	if before != after {
 		clearAllSchemas()
+		MarkInspectorDirty(n)
 	}
 }
 
@@ -69,6 +70,7 @@ func (n *Node) DoUI() {
 
 	if before != after {
 		clearAllSchemas()
+		MarkInspectorDirty(n)
 	}
 }
 

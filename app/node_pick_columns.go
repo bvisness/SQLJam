@@ -113,7 +113,7 @@ func (p *PickColumns) DoUI(n *Node) {
 				n.UIRect.Width/2 - UIFieldSpacing/2,
 				UIFieldHeight,
 			})
-			entry.Col, _ = col.(string)
+			entry.Col = col.(string)
 
 			aliasRect := rl.Rectangle{
 				n.UIRect.X + n.UIRect.Width/2 + UIFieldSpacing/2,
@@ -121,7 +121,7 @@ func (p *PickColumns) DoUI(n *Node) {
 				n.UIRect.Width/2 - UIFieldSpacing/2,
 				UIFieldHeight,
 			}
-			entry.Alias = entry.AliasTextbox.Do(aliasRect, entry.Alias, 100)
+			entry.Alias, _ = entry.AliasTextbox.Do(aliasRect, entry.Alias, 100)
 		}()
 	}
 }

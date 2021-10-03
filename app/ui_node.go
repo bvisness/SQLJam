@@ -1,8 +1,6 @@
 package app
 
 import (
-	"fmt"
-
 	"github.com/bvisness/SQLJam/raygui"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
@@ -96,11 +94,9 @@ func drawNode(n *Node) {
 
 	titleHeight := float32(32)
 
-	titleBarRect := rl.Rectangle{nodeRect.X, nodeRect.Y, nodeRect.Width - 24, titleHeight}
-	previewRect := rl.Rectangle{nodeRect.X + nodeRect.Width - 24, nodeRect.Y, 24, titleHeight}
+	titleBarRect := rl.Rectangle{nodeRect.X, nodeRect.Y, nodeRect.Width, titleHeight}
 
 	drawBasicText(n.Title, nodeRect.X+6, nodeRect.Y+3, titleHeight, Brightness(n.Color, 0.4))
-	drawBasicText("P", previewRect.X+3, previewRect.Y+5, 28, Brightness(n.Color, 0.4))
 
 	for i, pinPos := range n.InputPinPos {
 		if n.Snapped && i == 0 {
@@ -116,8 +112,8 @@ func drawNode(n *Node) {
 		drawPin(pinPos, pinJut, false, pinColor)
 
 		if source, ok := didDropWire(); isHoverPin && ok {
-			fmt.Println("dropped")
 			n.Inputs[i] = source
+			MarkInspectorDirty(n)
 		} else if n.Inputs[i] != nil {
 			if tryDragNewWire(n.Inputs[i], getPinRect(n.InputPinPos[i], false)) {
 				n.Inputs[i] = nil
@@ -155,12 +151,9 @@ func drawNode(n *Node) {
 		}
 	}
 
-	previewHover := rl.CheckCollisionPointRec(raygui.GetMousePositionWorld(), previewRect)
-	if previewHover && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
-		sql := n.GenerateSql()
-		currentSQL = sql
-		resultsOpen = true
-		setLatestResult(doQuery(sql))
+	titlebarHover := rl.CheckCollisionPointRec(raygui.GetMousePositionWorld(), titleBarRect)
+	if titlebarHover && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
+		MarkInspectorDirty(n)
 	}
 
 	n.DoUI()
