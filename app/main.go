@@ -11,6 +11,7 @@ import (
 
 var screenWidth = float32(1920)
 var screenHeight = float32(1080)
+
 const resultsMaxHeight = 400
 const currentSQLWidth = 500
 
@@ -77,12 +78,11 @@ func Main() {
 	rl.InitWindow(int32(screenWidth), int32(screenHeight), "SQL Jam")
 	defer rl.CloseWindow()
 
-
 	//monitorHeight := rl.GetMonitorHeight(rl.GetCurrentMonitor())
 	//rl.SetWindowSize(screenWidth, monitorHeight)
 	dpi := rl.GetWindowScaleDPI()
-	monWidth := float32(rl.GetMonitorWidth(rl.GetCurrentMonitor())) / dpi.X
-	monHeight := float32(rl.GetMonitorHeight(rl.GetCurrentMonitor())) / dpi.Y
+	monWidth := float32(rl.GetMonitorWidth(rl.GetCurrentMonitor()))
+	monHeight := float32(rl.GetMonitorHeight(rl.GetCurrentMonitor()))
 	rl.SetWindowSize(int(monWidth*0.8), int(monHeight*0.8))
 	rl.SetWindowPosition(int(monWidth*0.1), int(monHeight*0.1))
 
