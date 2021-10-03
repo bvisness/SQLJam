@@ -149,11 +149,11 @@ func drawNode(n *Node) {
 				trySnapNode(n)
 			}
 		}
-	}
-
-	titlebarHover := rl.CheckCollisionPointRec(raygui.GetMousePositionWorld(), titleBarRect)
-	if titlebarHover && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
-		MarkInspectorDirty(n)
+	} else {
+		titlebarHover := rl.CheckCollisionPointRec(raygui.GetMousePositionWorld(), titleBarRect)
+		if titlebarHover && rl.IsMouseButtonReleased(rl.MouseLeftButton) && !dragging {
+			MarkInspectorDirty(n)
+		}
 	}
 
 	n.DoUI()
