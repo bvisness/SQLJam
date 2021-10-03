@@ -17,7 +17,7 @@ func NewFilter() *Node {
 	return &Node{
 		Title:   "Filter",
 		CanSnap: true,
-		Color:   rl.NewColor(40,204,223, 255),
+		Color:   rl.NewColor(40, 204, 223, 255),
 		Inputs:  make([]*Node, 1),
 		Data:    &Filter{},
 	}
@@ -31,6 +31,6 @@ func (d *Filter) DoUI(n *Node) {
 	d.Conditions, _ = d.TextBox.Do(n.UIRect, d.Conditions, 100)
 }
 
-func (d *Filter) Serialize() string {
-	return d.Conditions
+func (d *Filter) Serialize() (res string, active bool) {
+	return d.Conditions, d.TextBox.Active
 }

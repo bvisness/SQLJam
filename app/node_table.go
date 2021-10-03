@@ -20,7 +20,7 @@ func NewTable() *Node {
 	return &Node{
 		Title:   "Table",
 		CanSnap: false,
-		Color:   rl.NewColor(244,180,27, 255),
+		Color:   rl.NewColor(244, 180, 27, 255),
 		Data: &Table{
 			TableDropdown: raygui.NewDropdownEx(),
 		},
@@ -95,6 +95,6 @@ func updateTableDropdown(dropdown *raygui.DropdownEx) {
 	dropdown.SetOptions(opts...)
 }
 
-func (d *Table) Serialize() string {
-	return d.Table
+func (d *Table) Serialize() (string, bool) {
+	return d.Table, false
 }

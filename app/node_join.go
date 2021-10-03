@@ -36,7 +36,7 @@ func NewJoin() *Node {
 	return &Node{
 		Title:   "Join",
 		CanSnap: false,
-		Color:   rl.NewColor(113,170,52, 255),
+		Color:   rl.NewColor(113, 170, 52, 255),
 		Inputs:  make([]*Node, 2),
 		Data: &Join{
 			Conditions: []*JoinCondition{{}},
@@ -178,14 +178,16 @@ func (d *Join) DoUI(n *Node) {
 	}
 }
 
-func (j *Join) Serialize() string {
-	res := ""
+func (j *Join) Serialize() (res string, active bool) {
 	res += j.FirstAlias
 	for _, cond := range j.Conditions {
 		res += cond.Alias
 		res += cond.Condition
 		res += fmt.Sprintf("%v", cond.Left)
 		res += fmt.Sprintf("%v", cond.Right)
+		if cond.AliasTextBox.Active || cond.ConditionTextBox.Active {
+			active = true
+		}
 	}
-	return res
+	return
 }

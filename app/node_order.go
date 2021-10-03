@@ -120,11 +120,10 @@ func (d *Order) DoUI(n *Node) {
 	}
 }
 
-func (d *Order) Serialize() string {
-	res := ""
+func (d *Order) Serialize() (res string, active bool) {
 	for _, col := range d.Cols {
 		res += col.Col
 		res += fmt.Sprintf("%v", col.Descending)
 	}
-	return res
+	return res, false
 }

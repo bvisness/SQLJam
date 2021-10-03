@@ -130,11 +130,13 @@ func (p *PickColumns) DoUI(n *Node) {
 	}
 }
 
-func (d *PickColumns) Serialize() string {
-	res := ""
+func (d *PickColumns) Serialize() (res string, active bool) {
 	for _, entry := range d.Entries {
 		res += entry.Col
 		res += entry.Alias
+		if entry.AliasTextbox.Active {
+			active = true
+		}
 	}
-	return res
+	return
 }

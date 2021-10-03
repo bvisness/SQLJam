@@ -39,7 +39,7 @@ type Node struct {
 type NodeData interface {
 	Update(n *Node) // Set up data for later, set UI and layout stuff.
 	DoUI(n *Node)   // Run all of this node's specific UI.
-	Serialize() string
+	Serialize() (res string, active bool)
 }
 
 func (n *Node) Rect() rl.Rectangle {
@@ -53,32 +53,45 @@ func clearAllSchemas() {
 }
 
 func (n *Node) Update() {
-	before := n.Serialize()
+	before, activeBefore := n.Serialize()
 	n.Data.Update(n)
-	after := n.Serialize()
+	after, activeAfter := n.Serialize()
 
 	if before != after {
 		clearAllSchemas()
+	}
+
+	justDeactivated := activeBefore && !activeAfter
+	contentChangedAndInactive := before != after && !activeAfter
+
+	if justDeactivated || contentChangedAndInactive {
 		MarkInspectorDirty(n)
 	}
 }
 
 func (n *Node) DoUI() {
-	before := n.Serialize()
+	before, activeBefore := n.Serialize()
 	n.Data.DoUI(n)
-	after := n.Serialize()
+	after, activeAfter := n.Serialize()
 
 	if before != after {
 		clearAllSchemas()
+	}
+
+	justDeactivated := activeBefore && !activeAfter
+	contentChangedAndInactive := before != after && !activeAfter
+
+	if justDeactivated || contentChangedAndInactive {
 		MarkInspectorDirty(n)
 	}
 }
 
-func (n *Node) Serialize() string {
+func (n *Node) Serialize() (string, bool) {
 	res := ""
 	for _, input := range n.Inputs {
 		res += fmt.Sprintf("%p", input)
 	}
-	res += n.Data.Serialize()
-	return res
+	dataRes, dataActive := n.Data.Serialize()
+	res += dataRes
+	return res, dataActive
 }

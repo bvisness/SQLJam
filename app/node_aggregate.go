@@ -41,7 +41,7 @@ func NewAggregate() *Node {
 	return &Node{
 		Title:   "Aggregate",
 		CanSnap: true,
-		Color:   rl.NewColor(182,213,60, 255),
+		Color:   rl.NewColor(182, 213, 60, 255),
 		Inputs:  make([]*Node, 1),
 		Data: &Aggregate{
 			Aggregates: []*AggregateColumn{{}},
@@ -204,15 +204,17 @@ func (d *Aggregate) DoUI(n *Node) {
 	}
 }
 
-func (d *Aggregate) Serialize() string {
-	res := ""
+func (d *Aggregate) Serialize() (res string, active bool) {
 	for _, agg := range d.Aggregates {
 		res += fmt.Sprintf("%v", agg.Type)
 		res += agg.Col
 		res += agg.Alias
+		if agg.AliasTextbox.Active {
+			active = true
+		}
 	}
 	for _, gb := range d.GroupBys {
 		res += gb.Col
 	}
-	return res
+	return
 }
