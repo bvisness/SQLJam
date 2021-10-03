@@ -30,9 +30,9 @@ func Tint(c rl.Color, amt float32) rl.Color {
 	)
 }
 
-func Shade(c rl.Color, amt float32) rl.Color {
+func Brightness(c rl.Color, amt float32) rl.Color {
 	hsv := rl.ColorToHSV(c)
-	return rl.ColorFromHSV(hsv.X, hsv.Y, amt*hsv.Z)
+	return rl.ColorFromHSV(hsv.X, hsv.Y, Clamp(amt*hsv.Z, 0, 1))
 }
 
 func AffectColor(cv uint8, amt float32, base float32) uint8 {
@@ -44,9 +44,8 @@ func SetStyleColor(control raygui.Control, property raygui.ControlProperty, colo
 }
 
 func LoadThemeForNode(n *Node) {
-	dark1 := Shade(n.Color, 0.4)
-	light1 := Tint(n.Color, 0.6)
-	//half := rl.ColorAlpha(n.Color, 255)
+	dark1 := Brightness(n.Color, 0.4)
+	light1 := Tint(n.Color, 0.3)
 
 	SetStyleColor(raygui.Default, raygui.BaseColorNormalProp, n.Color)
 	SetStyleColor(raygui.Default, raygui.BaseColorFocusedProp, dark1)
@@ -65,6 +64,15 @@ func LoadThemeForNode(n *Node) {
 
 	SetStyleColor(raygui.TextBoxControl, raygui.BaseColorPressedProp, light1)
 	SetStyleColor(raygui.TextBoxControl, raygui.BorderColorPressedProp, dark1)
+
+
+	// Disabling stuff
+	SetStyleColor(raygui.Default, raygui.BaseColorDisabledProp, light1)
+	SetStyleColor(raygui.Default, raygui.BorderColorDisabledProp, dark1)
+	SetStyleColor(raygui.Default, raygui.TextColorDisabledProp, dark1)
+
+
+
 
 	//SetStyleColor(raygui.DropdownBoxControl, raygui.BackgroundColorProp, rl.Red)
 }

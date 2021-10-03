@@ -42,7 +42,7 @@ var combineRowsOpts = []raygui.DropdownExOption{
 }
 
 func (d *CombineRows) Update(n *Node) {
-	n.UISize = rl.Vector2{X: 240, Y: UIFieldHeight * 1.25}
+	n.UISize = rl.Vector2{X: 240, Y: 54}
 	d.Dropdown.SetOptions(combineRowsOpts...)
 }
 

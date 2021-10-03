@@ -7,7 +7,7 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
-const UIFieldHeight = 40
+const UIFieldHeight = 36
 const UIFieldSpacing = 4
 
 func getSchemaOfSqlSource(src SqlSource) ([]string, error) {

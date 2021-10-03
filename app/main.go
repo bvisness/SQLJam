@@ -28,6 +28,9 @@ var mainColorLight = rl.RayWhite
 var mainColorDark = rl.NewColor(46, 34, 47, 255)
 var pinColor = rl.NewColor(123, 107, 127, 255)
 
+var PaneFontColor = rl.NewColor(253,203,176,255)
+var PaneLineColor = rl.NewColor(139,94,91,255)
+
 func MainColor() rl.Color {
 	if dark {
 		return mainColorDark
@@ -56,9 +59,17 @@ func LoadStyleMain() {
 	raygui.SetStyle(raygui.Default, raygui.BorderColorNormalProp, 0x3E3546FF)
 	raygui.SetStyle(raygui.Default, raygui.TextColorNormalProp, 0x625565FF)
 
+	raygui.SetStyle(raygui.Default, raygui.TextSizeProp, 28)
+
 	raygui.SetStyle(raygui.Default, raygui.BaseColorFocusedProp, 0x625565FF)
 	raygui.SetStyle(raygui.Default, raygui.BorderColorFocusedProp, 0x3E3546FF)
 	raygui.SetStyle(raygui.Default, raygui.TextColorFocusedProp, ToHexNum(MainColor()))
+
+	SetStyleColor(raygui.ScrollBarControl, raygui.BorderColorPressedProp, Tint(MainColor(), 0.3))
+
+	SetStyleColor(raygui.SliderControl, raygui.BaseColorNormalProp, Tint(MainColor(), 0.3))
+
+	raygui.SetStyle(raygui.ListViewControl, raygui.ScrollBarWidth, 20)
 }
 
 func Main() {
@@ -145,8 +156,8 @@ func doFrame() {
 			// TODO: Find a nice way of returning us to exactly 100% zoom.
 			// But also supporting smooth trackpad zoom...?
 
-			if rl.IsMouseButtonDown(rl.MouseMiddleButton) {
-				if rl.IsMouseButtonPressed(rl.MouseMiddleButton) && p.MouseInPane() {
+			if rl.IsMouseButtonDown(rl.MouseRightButton) {
+				if rl.IsMouseButtonPressed(rl.MouseRightButton) && p.MouseInPane() {
 					panning = true
 					panMouseStart = raygui.GetMousePositionWorld()
 					panCamStart = cam.Target
@@ -389,7 +400,7 @@ func drawCurrentSQL() {
 			func(scroll raygui.ScrollContext) {
 
 				for i, line := range lines {
-					drawBasicText(line, scroll.Start.X+padding, scroll.Start.Y+padding+float32(i)*lineHeight, fontSize, rl.Black)
+					drawBasicText(line, scroll.Start.X+padding, scroll.Start.Y+padding+float32(i)*lineHeight, fontSize, PaneFontColor)
 				}
 			},
 		)

@@ -1734,7 +1734,7 @@ func ScrollBar(bounds rl.Rectangle, value, minValue, maxValue int) int {
 	DrawRectangle(bounds, int(GetStyle(ScrollBarControl, BorderWidthProp)), rl.Fade(rl.GetColor(int32(GetStyle(ListViewControl, Border+ControlProperty(state)*3))), guiAlpha), rl.Fade(rl.GetColor(int32(GetStyle(Default, BorderColorDisabledProp))), guiAlpha)) // Draw the background
 
 	DrawRectangle(scrollbar, 0, rl.Blank, rl.Fade(rl.GetColor(int32(GetStyle(ButtonControl, BaseColorNormalProp))), guiAlpha))          // Draw the scrollbar active area background
-	DrawRectangle(slider, 0, rl.Blank, rl.Fade(rl.GetColor(int32(GetStyle(SliderControl, Border+ControlProperty(state)*3))), guiAlpha)) // Draw the slider bar
+	DrawRectangle(slider, 0, rl.Blank, rl.Fade(rl.GetColor(int32(GetStyle(SliderControl, Base+ControlProperty(state)*3))), guiAlpha)) // Draw the slider bar
 
 	// Draw arrows
 	padding := (spinnerSize - int(GetStyle(ScrollBarControl, ArrowsSize))) / 2

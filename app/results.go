@@ -90,8 +90,11 @@ func drawLatestResults() {
 		rl.Vector2Add(Vector2Rotate(t1, triangleRot), trianglePos),
 		rl.Vector2Add(Vector2Rotate(t2, triangleRot), trianglePos),
 		rl.Vector2Add(Vector2Rotate(t3, triangleRot), trianglePos),
-		rl.White,
+		rl.NewColor(98,85,101, 255),
 	)
+
+
+	SetStyleColor(raygui.Default, raygui.BackgroundColorProp, MainColor())
 
 	DoPane(rl.Rectangle{0, screenHeight - resultsCurrentHeight, screenWidth - currentSQLWidth, resultsMaxHeight}, func(p Pane) {
 		if latestResult == nil {
@@ -111,14 +114,14 @@ func drawLatestResults() {
 				for i, cell := range row {
 					cellRec := rl.Rectangle{cellPos.X, cellPos.Y, cellPos.X + lrColWidths[i], cellPos.Y + lrRowHeight}
 					if rl.CheckCollisionRecs(cellRec, scroll.View) {
-						drawBasicText(cell, cellPos.X+lrCellPaddingH, cellPos.Y+lrCellPaddingV+1, lrFontSize, rl.Black)
+						drawBasicText(cell, cellPos.X+lrCellPaddingH, cellPos.Y+lrCellPaddingV+1, lrFontSize, PaneFontColor)
 					}
 					cellPos.X += lrColWidths[i]
 				}
 
 				lineY := cellPos.Y + lrRowHeight
 				if scroll.View.Y <= lineY && lineY <= scroll.View.Y+scroll.View.Height {
-					rl.DrawLine(0, int32(lineY), int32(scroll.View.X+scroll.View.Width), int32(lineY), rl.LightGray)
+					rl.DrawLine(0, int32(lineY), int32(scroll.View.X+scroll.View.Width), int32(lineY), PaneLineColor)
 				}
 
 				cellPos.Y += lrRowHeight
@@ -127,7 +130,7 @@ func drawLatestResults() {
 			gridX := scroll.Start.X
 			for _, width := range lrColWidths {
 				gridX += width
-				rl.DrawLine(int32(gridX), int32(scroll.View.Y), int32(gridX), int32(scroll.View.Y+scroll.View.Height), rl.LightGray)
+				rl.DrawLine(int32(gridX), int32(scroll.View.Y), int32(gridX), int32(scroll.View.Y+scroll.View.Height), PaneLineColor)
 			}
 		})
 	})
