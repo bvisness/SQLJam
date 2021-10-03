@@ -20,7 +20,7 @@ func NewTable() *Node {
 	return &Node{
 		Title:   "Table",
 		CanSnap: false,
-		Color:   rl.NewColor(242, 201, 76, 255),
+		Color:   rl.NewColor(249, 194, 43, 255),
 		Data: &Table{
 			TableDropdown: raygui.NewDropdownEx(),
 		},
@@ -45,7 +45,7 @@ func (t *Table) Update(n *Node) {
 		updateTableDropdown(&t.TableDropdown)
 	}
 
-	n.UISize = rl.Vector2{X: 200, Y: 24}
+	n.UISize = rl.Vector2{X: 200, Y: UIFieldHeight}
 }
 
 func (t *Table) DoUI(n *Node) {

@@ -94,7 +94,7 @@ func (d *Join) Update(n *Node) {
 
 	uiHeight += UIFieldHeight // +/- buttons
 
-	n.UISize = rl.Vector2{300, float32(uiHeight)}
+	n.UISize = rl.Vector2{480, float32(uiHeight)}
 }
 
 func (d *Join) DoUI(n *Node) {
@@ -108,7 +108,6 @@ func (d *Join) DoUI(n *Node) {
 			n.UIRect.Width,
 			UIFieldHeight,
 		}
-		rl.DrawRectangleRec(aliasRect, rl.White)
 		d.FirstAlias = d.FirstAliasTextbox.Do(aliasRect, d.FirstAlias, 100)
 	}
 
@@ -125,7 +124,6 @@ func (d *Join) DoUI(n *Node) {
 			n.UIRect.Width,
 			UIFieldHeight,
 		}
-		rl.DrawRectangleRec(aliasRect, rl.White)
 		condition.Alias = condition.AliasTextBox.Do(aliasRect, condition.Alias, 100)
 
 		fieldY += UIFieldHeight + UIFieldSpacing
@@ -137,7 +135,6 @@ func (d *Join) DoUI(n *Node) {
 			boxWidth,
 			UIFieldHeight,
 		}
-		rl.DrawRectangleRec(conditionRect, rl.White)
 		condition.Condition = condition.ConditionTextBox.Do(conditionRect, condition.Condition, 100)
 		condition.Left = raygui.Toggle(rl.Rectangle{
 			uiRight - (UIFieldHeight + UIFieldSpacing + UIFieldHeight),

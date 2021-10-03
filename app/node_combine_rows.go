@@ -26,7 +26,7 @@ func NewCombineRows(combineType CombineType) *Node {
 	return &Node{
 		Title:   "Combine Rows",
 		CanSnap: false,
-		Color:   rl.NewColor(178, 223, 219, 255),
+		Color:   rl.NewColor(77,155,230, 255),
 		Inputs:  make([]*Node, 2),
 		Data: &CombineRows{
 			CombinationType: combineType,
@@ -42,7 +42,7 @@ var combineRowsOpts = []raygui.DropdownExOption{
 }
 
 func (d *CombineRows) Update(n *Node) {
-	n.UISize = rl.Vector2{X: 200, Y: float32(48)}
+	n.UISize = rl.Vector2{X: 240, Y: UIFieldHeight * 1.25}
 	d.Dropdown.SetOptions(combineRowsOpts...)
 }
 

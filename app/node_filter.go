@@ -17,18 +17,18 @@ func NewFilter() *Node {
 	return &Node{
 		Title:   "Filter",
 		CanSnap: true,
-		Color:   rl.NewColor(111, 207, 151, 255),
+		Color:   rl.NewColor(30,188,115, 255),
 		Inputs:  make([]*Node, 1),
 		Data:    &Filter{},
 	}
 }
 
 func (d *Filter) Update(n *Node) {
-	n.UISize = rl.Vector2{360, 24}
+	n.UISize = rl.Vector2{360, UIFieldHeight}
 }
 
 func (d *Filter) DoUI(n *Node) {
-	rl.DrawRectangleRec(n.UIRect, rl.White)
+	//rl.DrawRectangleRec(n.UIRect, rl.White)
 	d.Conditions = d.TextBox.Do(n.UIRect, d.Conditions, 100)
 }
 

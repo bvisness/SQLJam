@@ -21,7 +21,7 @@ func NewPickColumns() *Node {
 	return &Node{
 		Title:   "Pick Columns",
 		CanSnap: true,
-		Color:   rl.NewColor(244, 143, 177, 255),
+		Color:   rl.NewColor(237,128,153, 255),
 		Inputs:  make([]*Node, 1),
 		Data: &PickColumns{
 			Entries: []*PickColumnsEntry{{}},
@@ -61,7 +61,7 @@ func (p *PickColumns) Update(n *Node) {
 	}
 	uiHeight += UIFieldHeight // for buttons
 
-	n.UISize = rl.Vector2{300, float32(uiHeight)}
+	n.UISize = rl.Vector2{400, float32(uiHeight)}
 
 	opts := columnNameDropdownOpts(n.Inputs[0])
 	for _, entry := range p.Entries {
@@ -121,7 +121,6 @@ func (p *PickColumns) DoUI(n *Node) {
 				n.UIRect.Width/2 - UIFieldSpacing/2,
 				UIFieldHeight,
 			}
-			rl.DrawRectangleRec(aliasRect, rl.White)
 			entry.Alias = entry.AliasTextbox.Do(aliasRect, entry.Alias, 100)
 		}()
 	}

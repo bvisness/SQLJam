@@ -86,7 +86,7 @@ func (d *Aggregate) Update(n *Node) {
 	}
 	height += UIFieldHeight // for +/- buttons
 
-	n.UISize = rl.Vector2{400, float32(height)}
+	n.UISize = rl.Vector2{480, float32(height)}
 
 	colOpts := columnNameDropdownOpts(n.Inputs[0])
 	for _, agg := range d.Aggregates {
@@ -198,7 +198,6 @@ func (d *Aggregate) DoUI(n *Node) {
 				fieldX += fieldWidth + UIFieldSpacing
 
 				aliasRect := rl.Rectangle{fieldX, fieldY, fieldWidth, UIFieldHeight}
-				rl.DrawRectangleRec(aliasRect, rl.White)
 				agg.Alias = agg.AliasTextbox.Do(aliasRect, agg.Alias, 100)
 			}()
 		}

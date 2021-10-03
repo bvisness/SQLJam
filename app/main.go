@@ -21,6 +21,45 @@ const wireThickness = 3
 var nodes []*Node
 var font rl.Font
 
+var dark = true
+var mainColorLight = rl.RayWhite
+var mainColorDark = rl.NewColor(46,34,47,255)
+var pinColor = rl.NewColor(98,85,101,255)
+
+func MainColor() rl.Color {
+	if dark {
+		return mainColorDark
+	} else {
+		return mainColorLight
+	}
+}
+
+func TextColor() rl.Color {
+	if dark {
+		return mainColorLight
+	} else {
+		return mainColorDark
+	}
+}
+
+// LoadStyleMain Per frame custom style settings
+func LoadStyleMain() {
+	raygui.SetFont(font)
+	raygui.SetStyle(raygui.ScrollBarControl, raygui.ArrowsVisible, 1)
+	raygui.SetStyle(raygui.DropdownBoxControl, raygui.BorderWidthProp, 2)
+	raygui.SetStyle(raygui.DropdownBoxControl, raygui.DropdownItemsPadding, 0)
+	raygui.SetStyle(raygui.TextBoxControl, raygui.BorderWidthProp, 2)
+
+	raygui.SetStyle(raygui.Default, raygui.BaseColorNormalProp, 0x3E3546FF)
+	raygui.SetStyle(raygui.Default, raygui.BorderColorNormalProp, 0x3E3546FF)
+	raygui.SetStyle(raygui.Default, raygui.TextColorNormalProp, 0x625565FF)
+
+
+	raygui.SetStyle(raygui.Default, raygui.BaseColorFocusedProp, 0x625565FF)
+	raygui.SetStyle(raygui.Default, raygui.BorderColorFocusedProp, 0x3E3546FF)
+	raygui.SetStyle(raygui.Default, raygui.TextColorFocusedProp, ToHexNum(MainColor()))
+}
+
 func Main() {
 	rl.InitWindow(screenWidth, screenHeight, "SQL Jam")
 	defer rl.CloseWindow()
@@ -32,10 +71,7 @@ func Main() {
 	//rl.GenTextureMipmaps(&font.Texture) // kinda muddy? need second opinion
 	rl.SetTextureFilter(font.Texture, rl.FilterBilinear) // FILTER_TRILINEAR requires generated mipmaps
 
-	// Styles
-	{
-		raygui.SetStyle(raygui.ScrollBarControl, raygui.ArrowsVisible, 1)
-	}
+	LoadStyleMain()
 
 	close := openDB()
 	defer close()
@@ -64,7 +100,7 @@ func doFrame() {
 	rl.BeginDrawing()
 	defer rl.EndDrawing()
 
-	rl.ClearBackground(rl.RayWhite)
+	rl.ClearBackground(MainColor())
 
 	updateDrag()
 
@@ -158,12 +194,12 @@ func doFrame() {
 					if input == nil {
 						continue
 					}
-					rl.DrawLineBezier(input.OutputPinPos, n.InputPinPos[i], wireThickness, rl.Black)
+					rl.DrawLineBezier(input.OutputPinPos, n.InputPinPos[i], wireThickness, pinColor)
 				}
 			}
 
 			if draggingWire() {
-				rl.DrawLineBezier(wireDragOutputNode.OutputPinPos, raygui.GetMousePositionWorld(), wireThickness, rl.Black)
+				rl.DrawLineBezier(wireDragOutputNode.OutputPinPos, raygui.GetMousePositionWorld(), wireThickness, pinColor)
 			}
 
 			getPinRect := func(pos rl.Vector2, right bool) rl.Rectangle {
@@ -184,6 +220,9 @@ func doFrame() {
 
 			// draw nodes
 			for _, n := range nodes {
+
+				LoadThemeForNode(n)
+
 				nodeRect := n.Rect()
 				bgRect := nodeRect
 				if n.Snapped {
@@ -195,11 +234,13 @@ func doFrame() {
 				rl.DrawRectangleRounded(bgRect, RoundnessPx(bgRect, 10), 6, n.Color)
 				//rl.DrawRectangleRoundedLines(bgRect, 0.16, 6, 2, rl.Black)
 
-				titleBarRect := rl.Rectangle{nodeRect.X, nodeRect.Y, nodeRect.Width - 24, 24}
-				previewRect := rl.Rectangle{nodeRect.X + nodeRect.Width - 24, nodeRect.Y, 24, 24}
+				titleHeight := float32(32)
 
-				drawBasicText(n.Title, nodeRect.X+6, nodeRect.Y+4, 24, rl.Black)
-				drawBasicText("P", previewRect.X+4, previewRect.Y+10, 14, rl.Black)
+				titleBarRect := rl.Rectangle{nodeRect.X, nodeRect.Y, nodeRect.Width - 24, titleHeight}
+				previewRect := rl.Rectangle{nodeRect.X + nodeRect.Width - 24, nodeRect.Y, 24, titleHeight}
+
+				drawBasicText(n.Title, nodeRect.X+6, nodeRect.Y+3, titleHeight, Shade(n.Color, 0.5))
+				drawBasicText("P", previewRect.X+3, previewRect.Y+5, 28, Shade(n.Color, 0.5))
 
 				for i, pinPos := range n.InputPinPos {
 					if n.Snapped && i == 0 {
@@ -208,9 +249,9 @@ func doFrame() {
 
 					isHoverPin := rl.CheckCollisionPointRec(raygui.GetMousePositionWorld(), getPinRect(pinPos, false))
 
-					pinColor := rl.Black
+					pinColor := pinColor
 					if isHoverPin {
-						pinColor = rl.Blue
+						pinColor = Tint(pinColor, 0.5)
 					}
 					rl.DrawRectangleRec(getPinRect(pinPos, false), pinColor)
 
@@ -224,7 +265,7 @@ func doFrame() {
 					}
 				}
 				if !n.HasChildren {
-					rl.DrawRectangleRec(getPinRect(n.OutputPinPos, true), rl.Black)
+					rl.DrawRectangleRec(getPinRect(n.OutputPinPos, true), pinColor)
 					if rl.CheckCollisionPointRec(raygui.GetMousePositionWorld(), getPinRect(n.OutputPinPos, true)) && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
 						tryDragNewWire(n)
 					}
@@ -262,6 +303,10 @@ func doFrame() {
 
 				n.DoUI()
 			}
+
+			// Reset to default style
+			raygui.LoadStyleDefault()
+			LoadStyleMain()
 		}
 		rl.EndMode2D()
 		raygui.Set2DCamera(nil)
@@ -292,7 +337,7 @@ func drawToolbar() {
 	if raygui.Button(rl.Rectangle{
 		X:      20,
 		Y:      float32(toolbarHeight/2) - float32(buttHeight/2),
-		Width:  100,
+		Width:  160,
 		Height: float32(buttHeight),
 	}, "Add Table") {
 		table := NewTable()
@@ -301,9 +346,9 @@ func drawToolbar() {
 	}
 
 	if raygui.Button(rl.Rectangle{
-		X:      140,
+		X:      200,
 		Y:      float32(toolbarHeight/2) - float32(buttHeight/2),
-		Width:  100,
+		Width:  180,
 		Height: float32(buttHeight),
 	}, "Add Filter") {
 		filter := NewFilter()
@@ -312,9 +357,9 @@ func drawToolbar() {
 	}
 
 	if raygui.Button(rl.Rectangle{
-		X:      260,
+		X:      400,
 		Y:      float32(toolbarHeight/2) - float32(buttHeight/2),
-		Width:  180,
+		Width:  260,
 		Height: float32(buttHeight),
 	}, "Add Pick Columns") {
 		pc := NewPickColumns()
@@ -323,9 +368,9 @@ func drawToolbar() {
 	}
 
 	if raygui.Button(rl.Rectangle{
-		X:      460,
+		X:      680,
 		Y:      float32(toolbarHeight/2) - float32(buttHeight/2),
-		Width:  180,
+		Width:  260,
 		Height: float32(buttHeight),
 	}, "Add Combine Rows") {
 		cr := NewCombineRows(Union)
@@ -334,9 +379,9 @@ func drawToolbar() {
 	}
 
 	if raygui.Button(rl.Rectangle{
-		X:      660,
+		X:      960,
 		Y:      float32(toolbarHeight/2) - float32(buttHeight/2),
-		Width:  100,
+		Width:  160,
 		Height: float32(buttHeight),
 	}, "Add Order") {
 		pc := NewOrder()
@@ -345,9 +390,9 @@ func drawToolbar() {
 	}
 
 	if raygui.Button(rl.Rectangle{
-		X:      780,
+		X:      1140,
 		Y:      float32(toolbarHeight/2) - float32(buttHeight/2),
-		Width:  100,
+		Width:  140,
 		Height: float32(buttHeight),
 	}, "Add Join") {
 		pc := NewJoin()
@@ -356,9 +401,9 @@ func drawToolbar() {
 	}
 
 	if raygui.Button(rl.Rectangle{
-		X:      900,
+		X:      1300,
 		Y:      float32(toolbarHeight/2) - float32(buttHeight/2),
-		Width:  100,
+		Width:  220,
 		Height: float32(buttHeight),
 	}, "Add Aggregate") {
 		pc := NewAggregate()
@@ -400,6 +445,8 @@ func drawCurrentSQL() {
 		const fontSize = 20
 		const lineHeight = 24
 
+		rl.DrawRectangleRec(p.Bounds, MainColor())
+
 		lines := strings.Split(currentSQL, "\n")
 
 		var maxLineLength float32
@@ -419,6 +466,7 @@ func drawCurrentSQL() {
 				Height: padding + float32(len(lines)*lineHeight) + padding,
 			},
 			func(scroll raygui.ScrollContext) {
+
 				for i, line := range lines {
 					drawBasicText(line, scroll.Start.X+padding, scroll.Start.Y+padding+float32(i)*lineHeight, fontSize, rl.Black)
 				}

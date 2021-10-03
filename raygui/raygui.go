@@ -810,7 +810,7 @@ func Line(bounds rl.Rectangle, text string) {
 	//--------------------------------------------------------------------
 }
 
-const PanelBorderWidth = 1
+const PanelBorderWidth = 2
 
 // Panel control
 func Panel(bounds rl.Rectangle) {
@@ -1570,14 +1570,17 @@ func TextBox(bounds rl.Rectangle, text string, textSize int, editMode bool) (str
 	}
 	//--------------------------------------------------------------------
 
+
 	// Draw control
 	//--------------------------------------------------------------------
 	if state == StatePressed {
 		DrawRectangle(bounds, int(GetStyle(TextBoxControl, BorderWidthProp)), rl.Fade(rl.GetColor(int32(GetStyle(TextBoxControl, Border+(ControlProperty(state)*3)))), guiAlpha), rl.Fade(rl.GetColor(int32(GetStyle(TextBoxControl, BaseColorPressedProp))), guiAlpha))
 	} else if state == StateDisabled {
 		DrawRectangle(bounds, int(GetStyle(TextBoxControl, BorderWidthProp)), rl.Fade(rl.GetColor(int32(GetStyle(TextBoxControl, Border+(ControlProperty(state)*3)))), guiAlpha), rl.Fade(rl.GetColor(int32(GetStyle(TextBoxControl, BaseColorDisabledProp))), guiAlpha))
+	} else if state == StateNormal {
+		DrawRectangle(bounds, int(GetStyle(TextBoxControl, BorderWidthProp)), rl.Fade(rl.GetColor(int32(GetStyle(TextBoxControl, Border+(ControlProperty(state)*3)))), guiAlpha), rl.Blank)
 	} else {
-		DrawRectangle(bounds, 1, rl.Fade(rl.GetColor(int32(GetStyle(TextBoxControl, Border+(ControlProperty(state)*3)))), guiAlpha), rl.Blank)
+		DrawRectangle(bounds, int(GetStyle(TextBoxControl, BorderWidthProp)), rl.Fade(rl.GetColor(int32(GetStyle(TextBoxControl, Border+(ControlProperty(state)*3)))), guiAlpha), rl.Fade(rl.GetColor(int32(GetStyle(TextBoxControl, Base+(ControlProperty(state)*3)))), guiAlpha))
 	}
 
 	DrawText(text, GetTextBounds(TextBoxControl, bounds), TextAlignment(GetStyle(TextBoxControl, TextAlignmentProp)), rl.Fade(rl.GetColor(int32(GetStyle(TextBoxControl, Text+(ControlProperty(state)*3)))), guiAlpha))
