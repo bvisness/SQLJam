@@ -17,7 +17,7 @@ const currentSQLWidth = 500
 const dividerThickness = 4
 const pinRadius = 8
 const pinClickSize = 30 // size of clickable/droppable area, square
-const pinJutSize = 2
+const pinJut = 2
 const wireThickness = 3
 
 var nodes []*Node
@@ -231,20 +231,20 @@ func doFrame() {
 				}
 			}
 
-			drawPin := func(pos rl.Vector2, right bool, color rl.Color) {
+			drawPin := func(pos rl.Vector2, jut float32, right bool, color rl.Color) {
 				var startAngle, endAngle float32
 				var jutRec rl.Rectangle
 
 				if right {
 					startAngle = 0
 					endAngle = 180
-					jutRec = rl.Rectangle{pos.X, pos.Y - pinRadius, pinJutSize, pinRadius * 2}
-					pos.X += pinJutSize
+					jutRec = rl.Rectangle{pos.X, pos.Y - pinRadius, jut, pinRadius * 2}
+					pos.X += jut
 				} else {
 					startAngle = 180
 					endAngle = 360
-					jutRec = rl.Rectangle{pos.X - pinJutSize, pos.Y - pinRadius, pinJutSize, pinRadius * 2}
-					pos.X -= pinJutSize
+					jutRec = rl.Rectangle{pos.X - jut, pos.Y - pinRadius, jut, pinRadius * 2}
+					pos.X -= jut
 				}
 
 				rl.DrawRectangleRec(jutRec, color)
@@ -253,7 +253,6 @@ func doFrame() {
 
 			// draw nodes
 			for _, n := range nodes {
-
 				LoadThemeForNode(n)
 
 				nodeRect := n.Rect()
@@ -264,10 +263,32 @@ func doFrame() {
 					bgRect.Height += snappedOverlap
 				}
 
+				const stackBackJut = 5
+				doStackBack := !n.HasChildren && n.Snapped
+
 				shadowRect := bgRect
 				shadowRect.Y += 4
+				if doStackBack {
+					shadowRect.Width += stackBackJut
+				}
 
+				// draw drop shadow
 				rl.DrawRectangleRounded(shadowRect, RoundnessPx(shadowRect, 10), 6, rl.NewColor(0, 0, 0, 50))
+
+				// draw a stack behinder thinger
+				if doStackBack {
+					root := SnapRoot(n)
+					stackBackRect := rl.Rectangle{
+						X:      n.Pos.X,
+						Y:      root.Pos.Y,
+						Width:  n.Size.X + stackBackJut,
+						Height: n.Pos.Y + n.Size.Y - root.Pos.Y,
+					}
+					rl.DrawRectangleRounded(stackBackRect, RoundnessPx(stackBackRect, 10), 6, pinColor)
+
+					shadowRect.Width += stackBackJut
+				}
+
 				rl.DrawRectangleRounded(bgRect, RoundnessPx(bgRect, 10), 6, n.Color) // main node
 				//rl.DrawRectangleRoundedLines(bgRect, 0.16, 6, 2, rl.Black)
 
@@ -292,7 +313,7 @@ func doFrame() {
 					if isHoverPin {
 						pinColor = pinHoverColor
 					}
-					drawPin(pinPos, false, pinColor)
+					drawPin(pinPos, pinJut, false, pinColor)
 
 					if isHoverPin {
 						if source, ok := didDropWire(); ok {
@@ -304,12 +325,18 @@ func doFrame() {
 					}
 				}
 				if !n.HasChildren {
+					var jut float32 = pinJut
+					if n.Snapped {
+						jut += stackBackJut
+					}
+
 					isHoverPin := rl.CheckCollisionPointRec(raygui.GetMousePositionWorld(), getPinRect(n.OutputPinPos, true))
 					pinColor := pinColor
 					if isHoverPin {
 						pinColor = pinHoverColor
 					}
-					drawPin(n.OutputPinPos, true, pinColor)
+
+					drawPin(n.OutputPinPos, jut, true, pinColor)
 					if isHoverPin && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
 						tryDragNewWire(n)
 					}
