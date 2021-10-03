@@ -83,6 +83,7 @@ func UpdateInspectorIfNeeded() {
 		resultsOpen = true
 		setLatestResult(doQuery(sql))
 	}
+	inspectorDirty = false
 }
 
 func Main() {

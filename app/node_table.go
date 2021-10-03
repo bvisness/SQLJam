@@ -45,7 +45,7 @@ func (t *Table) Update(n *Node) {
 		updateTableDropdown(&t.TableDropdown)
 	}
 
-	n.UISize = rl.Vector2{X: 200, Y: UIFieldHeight}
+	n.UISize = rl.Vector2{X: 240, Y: UIFieldHeight}
 }
 
 func (t *Table) DoUI(n *Node) {
