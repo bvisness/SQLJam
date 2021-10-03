@@ -20,7 +20,7 @@ func NewTable() *Node {
 	return &Node{
 		Title:   "Table",
 		CanSnap: false,
-		Color:   rl.NewColor(249, 194, 43, 255),
+		Color:   rl.NewColor(244,180,27, 255),
 		Data: &Table{
 			TableDropdown: raygui.NewDropdownEx(),
 		},

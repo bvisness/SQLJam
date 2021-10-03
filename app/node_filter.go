@@ -17,7 +17,7 @@ func NewFilter() *Node {
 	return &Node{
 		Title:   "Filter",
 		CanSnap: true,
-		Color:   rl.NewColor(30,188,115, 255),
+		Color:   rl.NewColor(40,204,223, 255),
 		Inputs:  make([]*Node, 1),
 		Data:    &Filter{},
 	}

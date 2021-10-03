@@ -21,7 +21,7 @@ func NewPickColumns() *Node {
 	return &Node{
 		Title:   "Pick Columns",
 		CanSnap: true,
-		Color:   rl.NewColor(237,128,153, 255),
+		Color:   rl.NewColor(255,122,125, 255),
 		Inputs:  make([]*Node, 1),
 		Data: &PickColumns{
 			Entries: []*PickColumnsEntry{{}},

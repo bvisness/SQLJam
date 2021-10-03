@@ -26,7 +26,7 @@ func NewCombineRows(combineType CombineType) *Node {
 	return &Node{
 		Title:   "Combine Rows",
 		CanSnap: false,
-		Color:   rl.NewColor(77,155,230, 255),
+		Color:   rl.NewColor(30,188,115, 255),
 		Inputs:  make([]*Node, 2),
 		Data: &CombineRows{
 			CombinationType: combineType,

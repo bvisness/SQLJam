@@ -36,7 +36,7 @@ func NewJoin() *Node {
 	return &Node{
 		Title:   "Join",
 		CanSnap: false,
-		Color:   rl.NewColor(102, 187, 106, 255),
+		Color:   rl.NewColor(113,170,52, 255),
 		Inputs:  make([]*Node, 2),
 		Data: &Join{
 			Conditions: []*JoinCondition{{}},

@@ -44,8 +44,8 @@ func SetStyleColor(control raygui.Control, property raygui.ControlProperty, colo
 }
 
 func LoadThemeForNode(n *Node) {
-	dark1 := Shade(n.Color, 0.3)
-	light1 := Tint(n.Color, 0.3)
+	dark1 := Shade(n.Color, 0.4)
+	light1 := Tint(n.Color, 0.6)
 	//half := rl.ColorAlpha(n.Color, 255)
 
 	SetStyleColor(raygui.Default, raygui.BaseColorNormalProp, n.Color)
