@@ -15,7 +15,9 @@ const resultsMaxHeight = 400
 const currentSQLWidth = 500
 
 const dividerThickness = 4
-const pinSize = 12
+const pinRadius = 8
+const pinClickSize = 30 // size of clickable/droppable area, square
+const pinJutSize = 2
 const wireThickness = 3
 
 var nodes []*Node
@@ -24,7 +26,7 @@ var font rl.Font
 var dark = true
 var mainColorLight = rl.RayWhite
 var mainColorDark = rl.NewColor(46, 34, 47, 255)
-var pinColor = rl.NewColor(98, 85, 101, 255)
+var pinColor = rl.NewColor(123, 107, 127, 255)
 
 func MainColor() rl.Color {
 	if dark {
@@ -93,6 +95,13 @@ var panCamStart rl.Vector2
 
 var currentSQL string
 
+const minZoom = 0.25
+const maxZoom = 4
+const zoomSnapRadius = 0.15 // percent deviation from snap point - e.g. radius of 0.2 means snap point +/- 20%
+
+var zoom float32 = 1
+var zoomSnapPoints = []float32{0.25, 0.5, 1, 2, 3, 4}
+
 func doFrame() {
 	raygui.Set2DCamera(nil)
 
@@ -106,21 +115,26 @@ func doFrame() {
 	DoPane(rl.Rectangle{0, 0, screenWidth, screenHeight - resultsCurrentHeight}, func(p Pane) {
 		// Pan/zoom camera
 		{
-			const minZoom = 0.2
-			const maxZoom = 4
-
 			zoomBefore := cam.Zoom
 			zoomFactor := float32(rl.GetMouseWheelMove()) / 10
 			if !p.MouseInPane() {
 				zoomFactor = 0
 			}
-			cam.Zoom *= 1 + zoomFactor
-			if cam.Zoom < minZoom {
-				cam.Zoom = minZoom
+			zoom = zoom * (1 + zoomFactor) // actual zoom does not snap
+			snappedZoom := zoom
+			for _, snapPoint := range zoomSnapPoints {
+				if Abs(snappedZoom-snapPoint) <= snapPoint*zoomSnapRadius {
+					snappedZoom = snapPoint
+					break
+				}
 			}
-			if cam.Zoom > maxZoom {
-				cam.Zoom = maxZoom
+			if snappedZoom < minZoom {
+				snappedZoom = minZoom
 			}
+			if snappedZoom > maxZoom {
+				snappedZoom = maxZoom
+			}
+			cam.Zoom = snappedZoom
 			zoomAfter := cam.Zoom
 			actualZoomFactor := zoomAfter/zoomBefore - 1
 
@@ -206,15 +220,35 @@ func doFrame() {
 				if right {
 					x = pos.X
 				} else {
-					x = pos.X - pinSize
+					x = pos.X - pinClickSize
 				}
 
 				return rl.Rectangle{
 					x,
-					pos.Y - pinSize/2,
-					pinSize,
-					pinSize,
+					pos.Y - pinClickSize/2,
+					pinClickSize,
+					pinClickSize,
 				}
+			}
+
+			drawPin := func(pos rl.Vector2, right bool, color rl.Color) {
+				var startAngle, endAngle float32
+				var jutRec rl.Rectangle
+
+				if right {
+					startAngle = 0
+					endAngle = 180
+					jutRec = rl.Rectangle{pos.X, pos.Y - pinRadius, pinJutSize, pinRadius * 2}
+					pos.X += pinJutSize
+				} else {
+					startAngle = 180
+					endAngle = 360
+					jutRec = rl.Rectangle{pos.X - pinJutSize, pos.Y - pinRadius, pinJutSize, pinRadius * 2}
+					pos.X -= pinJutSize
+				}
+
+				rl.DrawRectangleRec(jutRec, color)
+				rl.DrawCircleSector(pos, pinRadius, startAngle, endAngle, 36, color)
 			}
 
 			// draw nodes
@@ -256,7 +290,7 @@ func doFrame() {
 					if isHoverPin {
 						pinColor = Tint(pinColor, 0.5)
 					}
-					rl.DrawRectangleRec(getPinRect(pinPos, false), pinColor)
+					drawPin(pinPos, false, pinColor)
 
 					if isHoverPin {
 						if source, ok := didDropWire(); ok {
@@ -268,16 +302,13 @@ func doFrame() {
 					}
 				}
 				if !n.HasChildren {
-					rl.DrawRectangleRec(getPinRect(n.OutputPinPos, true), pinColor)
+					drawPin(n.OutputPinPos, true, pinColor)
 					if rl.CheckCollisionPointRec(raygui.GetMousePositionWorld(), getPinRect(n.OutputPinPos, true)) && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
 						tryDragNewWire(n)
 					}
 				}
 
 				titleHover := rl.CheckCollisionPointRec(raygui.GetMousePositionWorld(), titleBarRect)
-				if titleHover {
-
-				}
 				if titleHover && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
 					if tryStartDrag(n, n.Pos) {
 						n.Sort = nodeSortTop()

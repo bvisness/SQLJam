@@ -46,7 +46,7 @@ func doLayout() {
 			if n.Snapped && i == 0 {
 				continue
 			}
-			n.InputPinPos[i] = rl.Vector2{n.Pos.X, n.Pos.Y + pinStartHeight + float32(n.InputPinHeights[i]) + pinSize/2}
+			n.InputPinPos[i] = rl.Vector2{n.Pos.X, n.Pos.Y + pinStartHeight + float32(n.InputPinHeights[i]) + pinRadius}
 		}
 	}
 
@@ -112,7 +112,7 @@ func doLayout() {
 	// output pin positions (unsnapped)
 	for _, n := range nodes {
 		if !n.Snapped {
-			n.OutputPinPos = rl.Vector2{n.Pos.X + n.Size.X, n.Pos.Y + float32(pinStartHeight) + pinSize/2}
+			n.OutputPinPos = rl.Vector2{n.Pos.X + n.Size.X, n.Pos.Y + float32(pinStartHeight) + pinRadius}
 		}
 	}
 

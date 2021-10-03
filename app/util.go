@@ -25,6 +25,14 @@ func EaseInOutCubic(x float32) float32 {
 	}
 }
 
+func Abs(a float32) float32 {
+	if a < 0 {
+		return -a
+	} else {
+		return a
+	}
+}
+
 func Clamp(x, min, max float32) float32 {
 	if x < min {
 		return min
