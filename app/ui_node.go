@@ -1,6 +1,8 @@
 package app
 
 import (
+	"fmt"
+
 	"github.com/bvisness/SQLJam/raygui"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
@@ -113,11 +115,11 @@ func drawNode(n *Node) {
 		}
 		drawPin(pinPos, pinJut, false, pinColor)
 
-		if isHoverPin {
-			if source, ok := didDropWire(); ok {
-				n.Inputs[i] = source
-			} else if rl.IsMouseButtonPressed(rl.MouseLeftButton) && n.Inputs[i] != nil {
-				tryDragNewWire(n.Inputs[i])
+		if source, ok := didDropWire(); isHoverPin && ok {
+			fmt.Println("dropped")
+			n.Inputs[i] = source
+		} else if n.Inputs[i] != nil {
+			if tryDragNewWire(n.Inputs[i], getPinRect(n.InputPinPos[i], false)) {
 				n.Inputs[i] = nil
 			}
 		}
@@ -134,16 +136,11 @@ func drawNode(n *Node) {
 		}
 
 		drawPin(n.OutputPinPos, jut, true, pinColor)
-		if isHoverOutputPin && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
-			tryDragNewWire(n)
-		}
+		tryDragNewWire(n, getPinRect(n.OutputPinPos, true))
 	}
 
-	titleHover := rl.CheckCollisionPointRec(raygui.GetMousePositionWorld(), titleBarRect)
-	if titleHover && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
-		if tryStartDrag(n, n.Pos) {
-			n.Sort = nodeSortTop()
-		}
+	if tryStartDrag(n, titleBarRect, n.Pos) {
+		n.Sort = nodeSortTop()
 	}
 
 	if draggingThis, done, canceled := dragState(n); draggingThis {

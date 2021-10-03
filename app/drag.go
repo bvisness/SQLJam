@@ -8,6 +8,7 @@ import (
 )
 
 var dragging bool
+var dragPending bool
 var dragCanceled bool
 var dragThing interface{}
 var dragKey string
@@ -32,24 +33,50 @@ func updateDrag() {
 		dragging = false
 	} else if rl.IsMouseButtonUp(rl.MouseLeftButton) {
 		dragging = false
+		dragPending = false
 		dragCanceled = true
 		dragThing = nil
 		dragKey = ""
 		dragMouseStart = rl.Vector2{}
 		dragObjStart = rl.Vector2{}
+	} else if rl.IsMouseButtonDown(rl.MouseLeftButton) {
+		if !dragging && !dragPending {
+			dragPending = true
+			dragMouseStart = raygui.GetMousePositionWorld()
+		}
 	}
 }
 
-func tryStartDrag(thing interface{}, objStart rl.Vector2) bool {
+func tryStartDrag(thing interface{}, dragRegion rl.Rectangle, objStart rl.Vector2) bool {
+	if thing == nil {
+		panic("you must provide a thing to drag")
+	}
+
 	if dragging {
+		// can't start a new drag while one is in progress
+		return false
+	}
+
+	if !dragPending {
+		// can't start a new drag with this item unless we have a pending one
+		return false
+	}
+
+	if rl.Vector2Length(rl.Vector2Subtract(raygui.GetMousePositionWorld(), dragMouseStart)) < 3 {
+		// haven't dragged far enough
+		return false
+	}
+
+	if !rl.CheckCollisionPointRec(dragMouseStart, dragRegion) {
+		// not dragging from the right place
 		return false
 	}
 
 	dragging = true
+	dragPending = false
 	dragCanceled = false
 	dragThing = thing
 	dragKey = getDragKey(thing)
-	dragMouseStart = raygui.GetMousePositionWorld()
 	dragObjStart = objStart
 
 	return true
@@ -89,13 +116,16 @@ const wireDragKey = "NEW_WIRE"
 
 var wireDragOutputNode *Node
 
-func tryDragNewWire(outputNode *Node) {
+func tryDragNewWire(outputNode *Node, dragRegion rl.Rectangle) bool {
 	if outputNode == nil {
-		return
+		return false
 	}
-	if tryStartDrag(wireDragKey, rl.Vector2{}) {
+	if tryStartDrag(wireDragKey, dragRegion, rl.Vector2{}) {
 		wireDragOutputNode = outputNode
+		return true
 	}
+
+	return false
 }
 
 func draggingWire() bool {
