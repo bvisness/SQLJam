@@ -52,6 +52,9 @@ func drawNode(n *Node) {
 		bgRect.Height += snappedOverlap
 	}
 
+	isHoverOutputPin := rl.CheckCollisionPointRec(raygui.GetMousePositionWorld(), getPinRect(n.OutputPinPos, true))
+	pinHoverColor := Tint(pinColor, 0.5)
+
 	const stackBackJut = 5
 	doStackBack := !n.HasChildren && n.Snapped
 
@@ -73,14 +76,18 @@ func drawNode(n *Node) {
 			Width:  n.Size.X + stackBackJut,
 			Height: n.Pos.Y + n.Size.Y - root.Pos.Y,
 		}
-		rl.DrawRectangleRounded(stackBackRect, RoundnessPx(stackBackRect, 10), 6, pinColor)
+
+		color := pinColor
+		if isHoverOutputPin {
+			color = pinHoverColor
+		}
+		rl.DrawRectangleRounded(stackBackRect, RoundnessPx(stackBackRect, 10), 6, color)
 
 		shadowRect.Width += stackBackJut
 	}
 
-	_, isDraggingNode := dragThing.(*Node)
 	bgColor := n.Color
-	if isDraggingNode && rl.CheckCollisionPointRec(raygui.GetMousePositionWorld(), n.SnapTargetRect) {
+	if canShowSnapHighlight() && rl.CheckCollisionPointRec(raygui.GetMousePositionWorld(), n.SnapTargetRect) {
 		bgColor = Tint(bgColor, 0.3)
 	}
 	rl.DrawRectangleRounded(bgRect, RoundnessPx(bgRect, 10), 6, bgColor) // main node
@@ -92,8 +99,6 @@ func drawNode(n *Node) {
 
 	drawBasicText(n.Title, nodeRect.X+6, nodeRect.Y+3, titleHeight, Shade(n.Color, 0.4))
 	drawBasicText("P", previewRect.X+3, previewRect.Y+5, 28, Shade(n.Color, 0.4))
-
-	pinHoverColor := Tint(pinColor, 0.5)
 
 	for i, pinPos := range n.InputPinPos {
 		if n.Snapped && i == 0 {
@@ -123,14 +128,13 @@ func drawNode(n *Node) {
 			jut += stackBackJut
 		}
 
-		isHoverPin := rl.CheckCollisionPointRec(raygui.GetMousePositionWorld(), getPinRect(n.OutputPinPos, true))
 		pinColor := pinColor
-		if isHoverPin {
+		if isHoverOutputPin {
 			pinColor = pinHoverColor
 		}
 
 		drawPin(n.OutputPinPos, jut, true, pinColor)
-		if isHoverPin && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
+		if isHoverOutputPin && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
 			tryDragNewWire(n)
 		}
 	}
@@ -163,4 +167,12 @@ func drawNode(n *Node) {
 	}
 
 	n.DoUI()
+}
+
+func canShowSnapHighlight() bool {
+	n, isDraggingNode := dragThing.(*Node)
+	if !isDraggingNode {
+		return false
+	}
+	return n.CanSnap
 }
