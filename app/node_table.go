@@ -8,7 +8,6 @@ import (
 )
 
 type Table struct {
-	NodeData
 	SqlSource
 	Table string
 

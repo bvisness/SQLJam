@@ -81,7 +81,7 @@ func UpdateInspectorIfNeeded() {
 		sql := selectedNode.GenerateSql()
 		currentSQL = sql
 		resultsOpen = true
-		setLatestResult(doQuery(sql))
+		latestResults.Update(doQuery(sql))
 	}
 	inspectorDirty = false
 }
@@ -91,9 +91,6 @@ func Main() {
 	rl.InitWindow(int32(screenWidth), int32(screenHeight), "SQL Jam")
 	defer rl.CloseWindow()
 
-	//monitorHeight := rl.GetMonitorHeight(rl.GetCurrentMonitor())
-	//rl.SetWindowSize(screenWidth, monitorHeight)
-	//dpi := rl.GetWindowScaleDPI()
 	monWidth := float32(rl.GetMonitorWidth(rl.GetCurrentMonitor()))
 	monHeight := float32(rl.GetMonitorHeight(rl.GetCurrentMonitor()))
 	rl.SetWindowSize(int(monWidth*0.8), int(monHeight*0.8))
@@ -138,6 +135,8 @@ const zoomSnapRadius = 0.15 // percent deviation from snap point - e.g. radius o
 var zoom float32 = 1
 var zoomSnapPoints = []float32{0.25, 0.5, 1, 2, 3, 4}
 
+var didCaptureScrollThisFrame bool
+
 func doFrame() {
 	screenWidth = float32(rl.GetScreenWidth())
 	screenHeight = float32(rl.GetScreenHeight())
@@ -149,56 +148,9 @@ func doFrame() {
 
 	rl.ClearBackground(MainColor())
 
+	didCaptureScrollThisFrame = false
+
 	DoPane(rl.Rectangle{0, 0, screenWidth, screenHeight - resultsCurrentHeight}, func(p Pane) {
-		// Pan/zoom camera
-		{
-			zoomBefore := cam.Zoom
-			zoomFactor := float32(rl.GetMouseWheelMove()) / 10
-			if !p.MouseInPane() {
-				zoomFactor = 0
-			}
-			zoom = zoom * (1 + zoomFactor) // actual zoom does not snap
-			if zoom < minZoom {
-				zoom = minZoom
-			}
-			if zoom > maxZoom {
-				zoom = maxZoom
-			}
-			snappedZoom := zoom
-			for _, snapPoint := range zoomSnapPoints {
-				if Abs(snappedZoom-snapPoint) <= snapPoint*zoomSnapRadius {
-					snappedZoom = snapPoint
-					break
-				}
-			}
-			cam.Zoom = snappedZoom
-			zoomAfter := cam.Zoom
-			actualZoomFactor := zoomAfter/zoomBefore - 1
-
-			mouseWorld := rl.GetScreenToWorld2D(raygui.GetMousePositionWorld(), cam)
-			cam2mouse := rl.Vector2Subtract(mouseWorld, cam.Target)
-			cam.Target = rl.Vector2Add(cam.Target, rl.Vector2Multiply(cam2mouse, rl.Vector2{actualZoomFactor, actualZoomFactor}))
-
-			// TODO: Find a nice way of returning us to exactly 100% zoom.
-			// But also supporting smooth trackpad zoom...?
-
-			if rl.IsMouseButtonDown(rl.MouseRightButton) {
-				if rl.IsMouseButtonPressed(rl.MouseRightButton) && p.MouseInPane() {
-					panning = true
-					panMouseStart = raygui.GetMousePositionWorld()
-					panCamStart = cam.Target
-				}
-			} else {
-				panning = false
-			}
-
-			if panning {
-				mousePos := raygui.GetMousePositionWorld()
-				mouseDelta := rl.Vector2DivideV(rl.Vector2Subtract(mousePos, panMouseStart), rl.Vector2{cam.Zoom, cam.Zoom})
-				cam.Target = rl.Vector2Subtract(panCamStart, mouseDelta) // camera moves opposite of mouse
-			}
-		}
-
 		// update nodes
 		for _, n := range nodes {
 			n.UISize = rl.Vector2{}
@@ -270,14 +222,60 @@ func doFrame() {
 
 		drawToolbar()
 
+		// Pan/zoom camera
+		{
+			zoomBefore := cam.Zoom
+			zoomFactor := float32(rl.GetMouseWheelMove()) / 10
+			if !p.MouseInPane() || didCaptureScrollThisFrame {
+				zoomFactor = 0
+			}
+			zoom = zoom * (1 + zoomFactor) // actual zoom does not snap
+			if zoom < minZoom {
+				zoom = minZoom
+			}
+			if zoom > maxZoom {
+				zoom = maxZoom
+			}
+			snappedZoom := zoom
+			for _, snapPoint := range zoomSnapPoints {
+				if Abs(snappedZoom-snapPoint) <= snapPoint*zoomSnapRadius {
+					snappedZoom = snapPoint
+					break
+				}
+			}
+			cam.Zoom = snappedZoom
+			zoomAfter := cam.Zoom
+			actualZoomFactor := zoomAfter/zoomBefore - 1
+
+			mouseWorld := rl.GetScreenToWorld2D(raygui.GetMousePositionWorld(), cam)
+			cam2mouse := rl.Vector2Subtract(mouseWorld, cam.Target)
+			cam.Target = rl.Vector2Add(cam.Target, rl.Vector2Multiply(cam2mouse, rl.Vector2{actualZoomFactor, actualZoomFactor}))
+
+			// TODO: Find a nice way of returning us to exactly 100% zoom.
+			// But also supporting smooth trackpad zoom...?
+
+			if rl.IsMouseButtonDown(rl.MouseRightButton) {
+				if rl.IsMouseButtonPressed(rl.MouseRightButton) && p.MouseInPane() {
+					panning = true
+					panMouseStart = raygui.GetMousePositionWorld()
+					panCamStart = cam.Target
+				}
+			} else {
+				panning = false
+			}
+
+			if panning {
+				mousePos := raygui.GetMousePositionWorld()
+				mouseDelta := rl.Vector2DivideV(rl.Vector2Subtract(mousePos, panMouseStart), rl.Vector2{cam.Zoom, cam.Zoom})
+				cam.Target = rl.Vector2Subtract(panCamStart, mouseDelta) // camera moves opposite of mouse
+			}
+		}
 	})
 
 	drawLatestResults()
 	drawCurrentSQL()
 
 }
-
-var blerp rl.Vector2
 
 func drawToolbar() {
 	toolbarWidth := int32(rl.GetScreenWidth())
@@ -373,6 +371,17 @@ func drawToolbar() {
 		initNewNode(n, rl.Vector2{600, 200})
 		nodes = append(nodes, n)
 	}
+
+	if raygui.Button(rl.Rectangle{
+		X:      screenWidth - 220 - 20,
+		Y:      float32(toolbarHeight/2) - float32(buttHeight/2),
+		Width:  220,
+		Height: float32(buttHeight),
+	}, "Add Preview") {
+		n := NewPreview()
+		initNewNode(n, rl.Vector2{600, 400})
+		nodes = append(nodes, n)
+	}
 }
 
 func RoundnessPx(rect rl.Rectangle, radiusPx float32) float32 {
@@ -416,8 +425,8 @@ func drawCurrentSQL() {
 
 		if selectedNode != nil {
 			rl.DrawRectangleRec(topBounds, selectedNode.Color)
-			centerOffset := topBounds.Width / 2 - float32(raygui.GetTextWidth(selectedNode.Title)) / 2
-			drawBasicText(selectedNode.Title, topBounds.X + centerOffset, topBounds.Y + 5, 32, Brightness(selectedNode.Color, 0.45))
+			centerOffset := topBounds.Width/2 - float32(raygui.GetTextWidth(selectedNode.Title))/2
+			drawBasicText(selectedNode.Title, topBounds.X+centerOffset, topBounds.Y+5, 32, Brightness(selectedNode.Color, 0.45))
 		}
 
 		lines := strings.Split(currentSQL, "\n")
@@ -450,7 +459,7 @@ func drawCurrentSQL() {
 		if raygui.Button(rl.Rectangle{p.Bounds.X, p.Bounds.Y + p.Bounds.Height - bottomButtonHeights, p.Bounds.Width / 2, bottomButtonHeights}, "Copy Text") {
 			rl.SetClipboardText(currentSQL)
 		}
-		if raygui.Button(rl.Rectangle{p.Bounds.X + p.Bounds.Width / 2, p.Bounds.Y + p.Bounds.Height - bottomButtonHeights, p.Bounds.Width / 2, bottomButtonHeights}, "Delete Node") {
+		if raygui.Button(rl.Rectangle{p.Bounds.X + p.Bounds.Width/2, p.Bounds.Y + p.Bounds.Height - bottomButtonHeights, p.Bounds.Width / 2, bottomButtonHeights}, "Delete Node") {
 			for i, scanNode := range nodes {
 
 				for k, input := range scanNode.Inputs {

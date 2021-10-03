@@ -8,7 +8,6 @@ import (
 )
 
 type Join struct {
-	NodeData
 	FirstAlias        string
 	FirstAliasTextbox raygui.TextBoxEx
 	Conditions        []*JoinCondition

@@ -6,7 +6,6 @@ import (
 )
 
 type PickColumns struct {
-	NodeData
 	Entries []*PickColumnsEntry
 }
 
@@ -117,7 +116,7 @@ func (p *PickColumns) DoUI(n *Node) {
 				n.UIRect.Width/2 - UIFieldSpacing/2,
 				UIFieldHeight,
 			})
-			entry.Col = col.(string)
+			entry.Col, _ = col.(string)
 
 			aliasRect := rl.Rectangle{
 				n.UIRect.X + n.UIRect.Width/2 + UIFieldSpacing/2,

@@ -25,6 +25,20 @@ func GetMousePositionWorld() rl.Vector2 {
 	return rl.GetScreenToWorld2D(rl.GetMousePosition(), *cam)
 }
 
+func WorldRectToScreen(rec rl.Rectangle) rl.Rectangle {
+	if cam == nil {
+		return rec
+	}
+	tlScreen := rl.GetWorldToScreen2D(rl.Vector2{rec.X, rec.Y}, *cam)
+	brScreen := rl.GetWorldToScreen2D(rl.Vector2{rec.X + rec.Width, rec.Y + rec.Height}, *cam)
+	return rl.Rectangle{
+		X:      tlScreen.X,
+		Y:      tlScreen.Y,
+		Width:  brScreen.X - tlScreen.X,
+		Height: brScreen.Y - tlScreen.Y,
+	}
+}
+
 type DropdownEx struct {
 	Open bool
 
@@ -131,14 +145,14 @@ type ScrollPanelEx struct {
 	Scroll rl.Vector2
 }
 
-// TODO: Make this respect 2D camera stuff
 func (s *ScrollPanelEx) Do(
 	bounds rl.Rectangle,
 	content rl.Rectangle,
 	draw func(scroll ScrollContext),
 ) {
 	view := ScrollPanel(bounds, content, &s.Scroll)
-	rl.BeginScissorMode(int32(view.X), int32(view.Y), int32(view.Width), int32(view.Height))
+	viewScreen := WorldRectToScreen(view)
+	rl.BeginScissorMode(int32(viewScreen.X), int32(viewScreen.Y), int32(viewScreen.Width), int32(viewScreen.Height))
 	draw(ScrollContext{
 		View:   view,
 		Scroll: s.Scroll,

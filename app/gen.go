@@ -417,7 +417,7 @@ func (ctx *QueryContext) CreateQuery(n *Node) *QueryContext {
 			GroupByCols: groupByCols,
 			Aggs:        aggs,
 		}
-
+	case *Preview:
 	}
 
 	return ctx

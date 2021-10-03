@@ -10,8 +10,6 @@ import (
 const orderDirectionWidth = 40
 
 type Order struct {
-	NodeData
-
 	Cols []*OrderColumn
 }
 

@@ -6,7 +6,6 @@ import (
 )
 
 type Filter struct {
-	NodeData
 	Conditions string // TODO: whatever data we actually need for our filter UI
 
 	// UI data

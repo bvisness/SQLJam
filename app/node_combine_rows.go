@@ -8,7 +8,6 @@ import (
 )
 
 type CombineRows struct {
-	NodeData
 	CombinationType CombineType
 	Dropdown        raygui.DropdownEx
 }
