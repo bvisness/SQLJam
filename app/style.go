@@ -32,7 +32,7 @@ func Tint(c rl.Color, amt float32) rl.Color {
 
 func Shade(c rl.Color, amt float32) rl.Color {
 	hsv := rl.ColorToHSV(c)
-	return rl.ColorFromHSV(hsv.X, hsv.Y, amt)
+	return rl.ColorFromHSV(hsv.X, hsv.Y, amt*hsv.Z)
 }
 
 func AffectColor(cv uint8, amt float32, base float32) uint8 {

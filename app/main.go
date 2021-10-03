@@ -230,7 +230,11 @@ func doFrame() {
 					bgRect.Height += snappedOverlap
 				}
 
-				rl.DrawRectangleRounded(bgRect, RoundnessPx(bgRect, 10), 6, n.Color)
+				shadowRect := bgRect
+				shadowRect.Y += 4
+
+				rl.DrawRectangleRounded(shadowRect, RoundnessPx(shadowRect, 10), 6, rl.NewColor(0, 0, 0, 50))
+				rl.DrawRectangleRounded(bgRect, RoundnessPx(bgRect, 10), 6, n.Color) // main node
 				//rl.DrawRectangleRoundedLines(bgRect, 0.16, 6, 2, rl.Black)
 
 				titleHeight := float32(32)
