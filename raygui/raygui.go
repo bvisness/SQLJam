@@ -1509,9 +1509,9 @@ func TextBox(bounds rl.Rectangle, text string, textSize int, editMode bool) (str
 
 	cursor := rl.Rectangle{
 		X:      bounds.X + float32(GetStyle(TextBoxControl, TextPaddingProp)) + float32(GetTextWidth(text)) + 2,
-		Y:      bounds.Y + bounds.Height/2 - float32(GetStyle(Default, TextSizeProp)),
+		Y:      bounds.Y + float32(GetStyle(TextBoxControl, TextPaddingProp)), // MODIFIED
 		Width:  4,
-		Height: float32(GetStyle(Default, TextSizeProp)) * 2,
+		Height: bounds.Height - float32(GetStyle(TextBoxControl, TextPaddingProp))*2, // MODIFIED
 	}
 
 	// Update control
@@ -1569,7 +1569,6 @@ func TextBox(bounds rl.Rectangle, text string, textSize int, editMode bool) (str
 		}
 	}
 	//--------------------------------------------------------------------
-
 
 	// Draw control
 	//--------------------------------------------------------------------
