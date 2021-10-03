@@ -18,7 +18,7 @@ func doLayout() {
 
 	const titleBarHeight = 24
 	const uiPadding = 10
-	const snapRectHeight = 30
+	const snapRectHeight = 50
 	const pinStartHeight = titleBarHeight + uiPadding
 
 	const pinDefaultSpacing = 36 // used if the node does not specify pin heights in update
@@ -138,6 +138,6 @@ func doLayout() {
 			n.Size.X - 2*uiPadding,
 			n.Size.Y - titleBarHeight - 2*uiPadding,
 		}
-		n.SnapTargetRect = rl.Rectangle{n.Pos.X, n.Pos.Y + n.Size.Y - snapRectHeight, n.Size.X, snapRectHeight}
+		n.SnapTargetRect = rl.Rectangle{n.Pos.X, n.Pos.Y + n.Size.Y, n.Size.X, snapRectHeight}
 	}
 }

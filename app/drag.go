@@ -9,6 +9,7 @@ import (
 
 var dragging bool
 var dragCanceled bool
+var dragThing interface{}
 var dragKey string
 var dragMouseStart rl.Vector2
 var dragObjStart rl.Vector2
@@ -32,20 +33,22 @@ func updateDrag() {
 	} else if rl.IsMouseButtonUp(rl.MouseLeftButton) {
 		dragging = false
 		dragCanceled = true
+		dragThing = nil
 		dragKey = ""
 		dragMouseStart = rl.Vector2{}
 		dragObjStart = rl.Vector2{}
 	}
 }
 
-func tryStartDrag(key interface{}, objStart rl.Vector2) bool {
+func tryStartDrag(thing interface{}, objStart rl.Vector2) bool {
 	if dragging {
 		return false
 	}
 
 	dragging = true
 	dragCanceled = false
-	dragKey = getDragKey(key)
+	dragThing = thing
+	dragKey = getDragKey(thing)
 	dragMouseStart = raygui.GetMousePositionWorld()
 	dragObjStart = objStart
 
