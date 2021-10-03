@@ -80,7 +80,11 @@ func Main() {
 
 	//monitorHeight := rl.GetMonitorHeight(rl.GetCurrentMonitor())
 	//rl.SetWindowSize(screenWidth, monitorHeight)
-	rl.MaximizeWindow()
+	dpi := rl.GetWindowScaleDPI()
+	monWidth := float32(rl.GetMonitorWidth(rl.GetCurrentMonitor())) / dpi.X
+	monHeight := float32(rl.GetMonitorHeight(rl.GetCurrentMonitor())) / dpi.Y
+	rl.SetWindowSize(int(monWidth*0.8), int(monHeight*0.8))
+	rl.SetWindowPosition(int(monWidth*0.1), int(monHeight*0.1))
 
 	// much fps or not you decide
 	rl.SetTargetFPS(int32(rl.GetMonitorRefreshRate(rl.GetCurrentMonitor())))
