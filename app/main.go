@@ -23,8 +23,8 @@ var font rl.Font
 
 var dark = true
 var mainColorLight = rl.RayWhite
-var mainColorDark = rl.NewColor(46,34,47,255)
-var pinColor = rl.NewColor(98,85,101,255)
+var mainColorDark = rl.NewColor(46, 34, 47, 255)
+var pinColor = rl.NewColor(98, 85, 101, 255)
 
 func MainColor() rl.Color {
 	if dark {
@@ -53,7 +53,6 @@ func LoadStyleMain() {
 	raygui.SetStyle(raygui.Default, raygui.BaseColorNormalProp, 0x3E3546FF)
 	raygui.SetStyle(raygui.Default, raygui.BorderColorNormalProp, 0x3E3546FF)
 	raygui.SetStyle(raygui.Default, raygui.TextColorNormalProp, 0x625565FF)
-
 
 	raygui.SetStyle(raygui.Default, raygui.BaseColorFocusedProp, 0x625565FF)
 	raygui.SetStyle(raygui.Default, raygui.BorderColorFocusedProp, 0x3E3546FF)
@@ -239,8 +238,8 @@ func doFrame() {
 				titleBarRect := rl.Rectangle{nodeRect.X, nodeRect.Y, nodeRect.Width - 24, titleHeight}
 				previewRect := rl.Rectangle{nodeRect.X + nodeRect.Width - 24, nodeRect.Y, 24, titleHeight}
 
-				drawBasicText(n.Title, nodeRect.X+6, nodeRect.Y+3, titleHeight, Shade(n.Color, 0.5))
-				drawBasicText("P", previewRect.X+3, previewRect.Y+5, 28, Shade(n.Color, 0.5))
+				drawBasicText(n.Title, nodeRect.X+6, nodeRect.Y+3, titleHeight, Shade(n.Color, 0.3))
+				drawBasicText("P", previewRect.X+3, previewRect.Y+5, 28, Shade(n.Color, 0.3))
 
 				for i, pinPos := range n.InputPinPos {
 					if n.Snapped && i == 0 {

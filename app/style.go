@@ -31,17 +31,12 @@ func Tint(c rl.Color, amt float32) rl.Color {
 }
 
 func Shade(c rl.Color, amt float32) rl.Color {
-	base := float32(0)
-	return rl.NewColor(
-		AffectColor(c.R, amt, base),
-		AffectColor(c.G, amt, base),
-		AffectColor(c.B, amt, base),
-		AffectColor(c.A, amt, base),
-	)
+	hsv := rl.ColorToHSV(c)
+	return rl.ColorFromHSV(hsv.X, hsv.Y, amt)
 }
 
 func AffectColor(cv uint8, amt float32, base float32) uint8 {
-	return uint8(Clamp(float32(cv) + (base - float32(cv)) * amt, 0, 255))
+	return uint8(Clamp(float32(cv)+(base-float32(cv))*amt, 0, 255))
 }
 
 func SetStyleColor(control raygui.Control, property raygui.ControlProperty, color rl.Color) {
@@ -49,8 +44,8 @@ func SetStyleColor(control raygui.Control, property raygui.ControlProperty, colo
 }
 
 func LoadThemeForNode(n *Node) {
-	dark1 := Shade(n.Color, 0.2)
-	light1 := Tint(n.Color, 0.2)
+	dark1 := Shade(n.Color, 0.3)
+	light1 := Tint(n.Color, 0.3)
 	//half := rl.ColorAlpha(n.Color, 255)
 
 	SetStyleColor(raygui.Default, raygui.BaseColorNormalProp, n.Color)
