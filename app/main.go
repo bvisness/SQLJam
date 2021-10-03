@@ -9,8 +9,8 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-const screenWidth = 1920
-const screenHeight = 1080
+var screenWidth = float32(1920)
+var screenHeight = float32(1080)
 const resultsMaxHeight = 400
 const currentSQLWidth = 500
 
@@ -73,8 +73,14 @@ func LoadStyleMain() {
 }
 
 func Main() {
-	rl.InitWindow(screenWidth, screenHeight, "SQL Jam")
+	rl.SetConfigFlags(rl.FlagWindowResizable)
+	rl.InitWindow(int32(screenWidth), int32(screenHeight), "SQL Jam")
 	defer rl.CloseWindow()
+
+
+	//monitorHeight := rl.GetMonitorHeight(rl.GetCurrentMonitor())
+	//rl.SetWindowSize(screenWidth, monitorHeight)
+	rl.MaximizeWindow()
 
 	// much fps or not you decide
 	rl.SetTargetFPS(int32(rl.GetMonitorRefreshRate(rl.GetCurrentMonitor())))
@@ -114,6 +120,9 @@ var zoom float32 = 1
 var zoomSnapPoints = []float32{0.25, 0.5, 1, 2, 3, 4}
 
 func doFrame() {
+	screenWidth = float32(rl.GetScreenWidth())
+	screenHeight = float32(rl.GetScreenHeight())
+
 	raygui.Set2DCamera(nil)
 
 	rl.BeginDrawing()
