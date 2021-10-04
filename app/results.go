@@ -66,7 +66,7 @@ func (p *QueryResultPanel) Draw(bounds rl.Rectangle) {
 		for _, row := range p.Rows {
 			cellPos.X = scroll.Start.X
 			for i, cell := range row {
-				cellRec := rl.Rectangle{cellPos.X, cellPos.Y, cellPos.X + p.ColWidths[i], cellPos.Y + resultRowHeight}
+				cellRec := rl.Rectangle{cellPos.X, cellPos.Y, p.ColWidths[i], resultRowHeight}
 				if rl.CheckCollisionRecs(cellRec, scroll.View) {
 					drawBasicText(cell, cellPos.X+resultCellPaddingH, cellPos.Y+resultCellPaddingV+1, resultFontSize, PaneFontColor)
 				}
@@ -75,7 +75,7 @@ func (p *QueryResultPanel) Draw(bounds rl.Rectangle) {
 
 			lineY := cellPos.Y + resultRowHeight
 			if scroll.View.Y <= lineY && lineY <= scroll.View.Y+scroll.View.Height {
-				rl.DrawLine(0, int32(lineY), int32(scroll.View.X+scroll.View.Width), int32(lineY), PaneLineColor)
+				rl.DrawLine(int32(scroll.View.X), int32(lineY), int32(scroll.View.X+scroll.View.Width), int32(lineY), PaneLineColor)
 			}
 
 			cellPos.Y += resultRowHeight
@@ -122,11 +122,6 @@ func drawLatestResults() {
 	tabRect := rl.Rectangle{tabX, tabY, tabWidth, tabHeight}
 	rl.DrawRectangleRounded(tabRect, RoundnessPx(tabRect, 4), 5, rl.Black)
 
-	tipSize := float32(32)
-	tipZoomFmt := int(cam.Zoom * 100)
-	tipText := fmt.Sprintf("Zoom: %d%%", tipZoomFmt)
-	drawBasicText(tipText, tabX - 40 - float32(raygui.GetTextWidth(tipText)), tabY + (tabHeight / 2) - (tipSize / 2), tipSize, PaneFontColor)
-
 	const triangleSize = 12
 	t1 := rl.Vector2{-triangleSize, triangleSize / 2}
 	t2 := rl.Vector2{triangleSize, triangleSize / 2}
@@ -140,9 +135,6 @@ func drawLatestResults() {
 		rl.Vector2Add(Vector2Rotate(t3, triangleRot), trianglePos),
 		rl.NewColor(98, 85, 101, 255),
 	)
-
-
-	SetStyleColor(raygui.Default, raygui.BackgroundColorProp, MainColor())
 
 	DoPane(rl.Rectangle{0, screenHeight - resultsCurrentHeight, screenWidth - currentSQLWidth, resultsMaxHeight}, func(p Pane) {
 		latestResults.Draw(p.Bounds)

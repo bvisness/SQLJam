@@ -44,6 +44,7 @@ func MainColor() rl.Color {
 func LoadStyleMain() {
 	raygui.SetFont(font)
 	raygui.SetStyle(raygui.Default, raygui.BorderWidthProp, 2)
+	SetStyleColor(raygui.Default, raygui.BackgroundColorProp, MainColor())
 
 	raygui.SetStyle(raygui.ScrollBarControl, raygui.ArrowsVisible, 1)
 	raygui.SetStyle(raygui.DropdownBoxControl, raygui.DropdownItemsPadding, 0)
@@ -60,11 +61,8 @@ func LoadStyleMain() {
 	raygui.SetStyle(raygui.Default, raygui.TextColorFocusedProp, ToHexNum(MainColor()))
 
 	SetStyleColor(raygui.ScrollBarControl, raygui.BorderColorPressedProp, Tint(MainColor(), 0.3))
-
 	SetStyleColor(raygui.SliderControl, raygui.BaseColorNormalProp, Tint(MainColor(), 0.3))
-
 	raygui.SetStyle(raygui.ListViewControl, raygui.ScrollBarWidth, 20)
-
 }
 
 func MarkInspectorDirtyCurrent() {

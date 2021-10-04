@@ -418,6 +418,7 @@ func (ctx *QueryContext) CreateQuery(n *Node) *QueryContext {
 			Aggs:        aggs,
 		}
 	case *Preview:
+		ctx = ctx.CreateQuery(n.Inputs[0])
 	}
 
 	return ctx
