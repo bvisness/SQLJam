@@ -5,6 +5,8 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
+var PickColumnsColor = rl.NewColor(255, 122, 125, 255)
+
 type PickColumns struct {
 	Entries []*PickColumnsEntry
 }
@@ -20,7 +22,7 @@ func NewPickColumns() *Node {
 	return &Node{
 		Title:   "Pick Columns",
 		CanSnap: true,
-		Color:   rl.NewColor(255, 122, 125, 255),
+		Color:   PickColumnsColor,
 		Inputs:  make([]*Node, 1),
 		Data: &PickColumns{
 			Entries: []*PickColumnsEntry{{}},

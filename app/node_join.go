@@ -7,6 +7,8 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
+var JoinColor = rl.NewColor(113, 170, 52, 255)
+
 type Join struct {
 	FirstAlias        string
 	FirstAliasTextbox raygui.TextBoxEx

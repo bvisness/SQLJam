@@ -7,6 +7,8 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
+var AggregateColor = rl.NewColor(182, 213, 60, 255)
+
 type Aggregate struct {
 	Aggregates []*AggregateColumn
 	GroupBys   []*AggregateGroupBy
@@ -41,7 +43,7 @@ func NewAggregate() *Node {
 	return &Node{
 		Title:   "Aggregate",
 		CanSnap: true,
-		Color:   rl.NewColor(182, 213, 60, 255),
+		Color:   AggregateColor,
 		Inputs:  make([]*Node, 1),
 		Data: &Aggregate{
 			Aggregates: []*AggregateColumn{{}},

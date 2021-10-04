@@ -5,6 +5,8 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
+var FilterColor = rl.NewColor(40, 204, 223, 255)
+
 type Filter struct {
 	Conditions string // TODO: whatever data we actually need for our filter UI
 
@@ -16,7 +18,7 @@ func NewFilter() *Node {
 	return &Node{
 		Title:   "Filter",
 		CanSnap: true,
-		Color:   rl.NewColor(40, 204, 223, 255),
+		Color:   FilterColor,
 		Inputs:  make([]*Node, 1),
 		Data:    &Filter{},
 	}

@@ -10,6 +10,8 @@ import (
 const previewMinWidth = 300
 const previewMinHeight = 200
 
+var PreviewColor = rl.Gray
+
 type Preview struct {
 	Panel     QueryResultPanel
 	Size      rl.Vector2 // this will be applied to UISize which will determine the node Size. Make sense???
@@ -22,7 +24,7 @@ func NewPreview() *Node {
 	return &Node{
 		Title:   "Preview",
 		CanSnap: true,
-		Color:   rl.Gray,
+		Color:   PreviewColor,
 		Inputs:  make([]*Node, 1),
 		Data: &Preview{
 			Size: rl.Vector2{600, 400},

@@ -7,6 +7,8 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
+var TableColor = rl.NewColor(244, 180, 27, 255)
+
 type Table struct {
 	SqlSource
 	Table string
@@ -19,7 +21,7 @@ func NewTable() *Node {
 	return &Node{
 		Title:   "Table",
 		CanSnap: false,
-		Color:   rl.NewColor(244, 180, 27, 255),
+		Color:   TableColor,
 		Data: &Table{
 			TableDropdown: raygui.NewDropdownEx(),
 		},

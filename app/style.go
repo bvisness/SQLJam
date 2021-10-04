@@ -44,15 +44,19 @@ func SetStyleColor(control raygui.Control, property raygui.ControlProperty, colo
 }
 
 func LoadThemeForNode(n *Node) {
-	dark1 := Brightness(n.Color, 0.4)
-	light1 := Tint(n.Color, 0.3)
+	LoadThemeForColor(n.Color)
+}
 
-	SetStyleColor(raygui.Default, raygui.BaseColorNormalProp, n.Color)
+func LoadThemeForColor(color rl.Color) {
+	dark1 := Brightness(color, 0.4)
+	light1 := Tint(color, 0.3)
+
+	SetStyleColor(raygui.Default, raygui.BaseColorNormalProp, color)
 	SetStyleColor(raygui.Default, raygui.BaseColorFocusedProp, dark1)
 	SetStyleColor(raygui.Default, raygui.BaseColorPressedProp, light1)
 
 	SetStyleColor(raygui.Default, raygui.TextColorNormalProp, dark1)
-	SetStyleColor(raygui.Default, raygui.TextColorFocusedProp, n.Color)
+	SetStyleColor(raygui.Default, raygui.TextColorFocusedProp, color)
 	SetStyleColor(raygui.Default, raygui.TextColorPressedProp, dark1)
 
 	SetStyleColor(raygui.Default, raygui.BorderColorNormalProp, dark1)
@@ -60,19 +64,15 @@ func LoadThemeForNode(n *Node) {
 	SetStyleColor(raygui.Default, raygui.BorderColorPressedProp, dark1)
 
 	SetStyleColor(raygui.Default, raygui.LineColorProp, dark1)
-	SetStyleColor(raygui.Default, raygui.BackgroundColorProp, n.Color)
+	SetStyleColor(raygui.Default, raygui.BackgroundColorProp, color)
 
 	SetStyleColor(raygui.TextBoxControl, raygui.BaseColorPressedProp, light1)
 	SetStyleColor(raygui.TextBoxControl, raygui.BorderColorPressedProp, dark1)
-
 
 	// Disabling stuff
 	SetStyleColor(raygui.Default, raygui.BaseColorDisabledProp, light1)
 	SetStyleColor(raygui.Default, raygui.BorderColorDisabledProp, dark1)
 	SetStyleColor(raygui.Default, raygui.TextColorDisabledProp, dark1)
-
-
-
 
 	//SetStyleColor(raygui.DropdownBoxControl, raygui.BackgroundColorProp, rl.Red)
 }

@@ -293,6 +293,7 @@ func drawToolbar() {
 		n.Sort = nodeSortTop()
 	}
 
+	LoadThemeForColor(TableColor)
 	if raygui.Button(rl.Rectangle{
 		X:      20,
 		Y:      float32(toolbarHeight/2) - float32(buttHeight/2),
@@ -304,6 +305,7 @@ func drawToolbar() {
 		nodes = append(nodes, n)
 	}
 
+	LoadThemeForColor(FilterColor)
 	if raygui.Button(rl.Rectangle{
 		X:      200,
 		Y:      float32(toolbarHeight/2) - float32(buttHeight/2),
@@ -315,6 +317,7 @@ func drawToolbar() {
 		nodes = append(nodes, n)
 	}
 
+	LoadThemeForColor(PickColumnsColor)
 	if raygui.Button(rl.Rectangle{
 		X:      400,
 		Y:      float32(toolbarHeight/2) - float32(buttHeight/2),
@@ -326,6 +329,7 @@ func drawToolbar() {
 		nodes = append(nodes, n)
 	}
 
+	LoadThemeForColor(CombineRowsColor)
 	if raygui.Button(rl.Rectangle{
 		X:      680,
 		Y:      float32(toolbarHeight/2) - float32(buttHeight/2),
@@ -337,6 +341,7 @@ func drawToolbar() {
 		nodes = append(nodes, n)
 	}
 
+	LoadThemeForColor(OrderColor)
 	if raygui.Button(rl.Rectangle{
 		X:      960,
 		Y:      float32(toolbarHeight/2) - float32(buttHeight/2),
@@ -348,6 +353,7 @@ func drawToolbar() {
 		nodes = append(nodes, n)
 	}
 
+	LoadThemeForColor(JoinColor)
 	if raygui.Button(rl.Rectangle{
 		X:      1140,
 		Y:      float32(toolbarHeight/2) - float32(buttHeight/2),
@@ -359,6 +365,7 @@ func drawToolbar() {
 		nodes = append(nodes, n)
 	}
 
+	LoadThemeForColor(AggregateColor)
 	if raygui.Button(rl.Rectangle{
 		X:      1300,
 		Y:      float32(toolbarHeight/2) - float32(buttHeight/2),
@@ -370,6 +377,7 @@ func drawToolbar() {
 		nodes = append(nodes, n)
 	}
 
+	LoadThemeForColor(PreviewColor)
 	if raygui.Button(rl.Rectangle{
 		X:      screenWidth - 220 - 20,
 		Y:      float32(toolbarHeight/2) - float32(buttHeight/2),
@@ -380,6 +388,10 @@ func drawToolbar() {
 		initNewNode(n, rl.Vector2{600, 400})
 		nodes = append(nodes, n)
 	}
+
+	LoadStyleMain()
+
+	rl.DrawRectangle(0, 0, toolbarWidth, toolbarHeight, rl.ColorAlpha(rl.Black, 0.25))
 }
 
 func RoundnessPx(rect rl.Rectangle, radiusPx float32) float32 {

@@ -7,6 +7,8 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
+var OrderColor = rl.NewColor(255, 204, 128, 255)
+
 const orderDirectionWidth = 50
 
 type Order struct {

@@ -7,6 +7,8 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
+var CombineRowsColor = rl.NewColor(30, 188, 115, 255)
+
 type CombineRows struct {
 	CombinationType CombineType
 	Dropdown        raygui.DropdownEx
@@ -25,7 +27,7 @@ func NewCombineRows(combineType CombineType) *Node {
 	return &Node{
 		Title:   "Combine Rows",
 		CanSnap: false,
-		Color:   rl.NewColor(30, 188, 115, 255),
+		Color:   CombineRowsColor,
 		Inputs:  make([]*Node, 2),
 		Data: &CombineRows{
 			CombinationType: combineType,
