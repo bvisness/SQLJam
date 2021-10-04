@@ -7,33 +7,33 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
-var OrderColor = rl.NewColor(255, 204, 128, 255)
+var SortColor = rl.NewColor(255, 204, 128, 255)
 
-const orderDirectionWidth = 50
+const sortDirectionWidth = 50
 
-type Order struct {
-	Cols []*OrderColumn
+type Sort struct {
+	Cols []*SortColumn
 }
 
-type OrderColumn struct {
+type SortColumn struct {
 	Col         string
 	Descending  bool
 	ColDropdown raygui.DropdownEx
 }
 
-func NewOrder() *Node {
+func NewSort() *Node {
 	return &Node{
-		Title:   "Order",
+		Title:   "Sort",
 		CanSnap: true,
 		Color:   rl.NewColor(255, 204, 128, 255),
 		Inputs:  make([]*Node, 1),
-		Data: &Order{
-			Cols: []*OrderColumn{{}},
+		Data: &Sort{
+			Cols: []*SortColumn{{}},
 		},
 	}
 }
 
-func (oc *Order) ColDropdowns() []*raygui.DropdownEx {
+func (oc *Sort) ColDropdowns() []*raygui.DropdownEx {
 	res := make([]*raygui.DropdownEx, len(oc.Cols))
 	for i := range res {
 		res[i] = &oc.Cols[i].ColDropdown
@@ -41,7 +41,7 @@ func (oc *Order) ColDropdowns() []*raygui.DropdownEx {
 	return res
 }
 
-func (d *Order) Update(n *Node) {
+func (d *Sort) Update(n *Node) {
 	uiHeight := 0
 	for range d.Cols {
 		uiHeight += UIFieldHeight
@@ -57,7 +57,7 @@ func (d *Order) Update(n *Node) {
 	}
 }
 
-func (d *Order) DoUI(n *Node) {
+func (d *Sort) DoUI(n *Node) {
 	openDropdown, isOpen := raygui.GetOpenDropdown(d.ColDropdowns())
 	if isOpen {
 		raygui.Disable()
@@ -73,7 +73,7 @@ func (d *Order) DoUI(n *Node) {
 		n.UIRect.Width/2 - UIFieldSpacing/2,
 		UIFieldHeight,
 	}, "+") {
-		d.Cols = append(d.Cols, &OrderColumn{})
+		d.Cols = append(d.Cols, &SortColumn{})
 	}
 	if raygui.Button(rl.Rectangle{
 		n.UIRect.X + n.UIRect.Width/2 + UIFieldSpacing/2,
@@ -101,7 +101,7 @@ func (d *Order) DoUI(n *Node) {
 			colName := dropdown.Do(rl.Rectangle{
 				n.UIRect.X,
 				fieldY,
-				n.UIRect.Width - orderDirectionWidth - UIFieldSpacing,
+				n.UIRect.Width - sortDirectionWidth - UIFieldSpacing,
 				UIFieldHeight,
 			})
 			col.Col, _ = colName.(string)
@@ -111,16 +111,16 @@ func (d *Order) DoUI(n *Node) {
 				directionStr = "Z-A"
 			}
 			col.Descending = raygui.Toggle(rl.Rectangle{
-				n.UIRect.X + n.UIRect.Width - orderDirectionWidth,
+				n.UIRect.X + n.UIRect.Width - sortDirectionWidth,
 				fieldY,
-				orderDirectionWidth,
+				sortDirectionWidth,
 				UIFieldHeight,
 			}, directionStr, col.Descending)
 		}()
 	}
 }
 
-func (d *Order) Serialize() (res string, active bool) {
+func (d *Sort) Serialize() (res string, active bool) {
 	for _, col := range d.Cols {
 		res += col.Col
 		res += fmt.Sprintf("%v", col.Descending)

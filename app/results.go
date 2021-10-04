@@ -7,6 +7,8 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
+const resultsHeightFrac = 0.37
+const resultsMaxHeight = 400
 const resultFontSize = 20
 const resultCellPaddingV = 5
 const resultCellPaddingH = 8
@@ -97,6 +99,15 @@ var resultsCurrentHeight float32 = 0
 
 var latestResults = &QueryResultPanel{}
 
+func resultsOpenHeight() float32 {
+	res := resultsHeightFrac * screenHeight
+	if res > resultsMaxHeight {
+		return resultsMaxHeight
+	} else {
+		return res
+	}
+}
+
 func drawLatestResults() {
 	if resultsOpen {
 		resultsOpenFrac += rl.GetFrameTime() / resultsOpenDuration
@@ -105,7 +116,7 @@ func drawLatestResults() {
 	}
 	resultsOpenFrac = Clamp(resultsOpenFrac, 0, 1)
 
-	resultsCurrentHeight = EaseInOutCubic(resultsOpenFrac) * resultsMaxHeight
+	resultsCurrentHeight = EaseInOutCubic(resultsOpenFrac) * resultsOpenHeight()
 
 	var lineY float32 = screenHeight - resultsCurrentHeight - dividerThickness/2
 	rl.DrawLineEx(
@@ -133,7 +144,7 @@ func drawLatestResults() {
 	t3 := rl.Vector2{0, -triangleSize / 2}
 
 	trianglePos := rl.Vector2{tabX + tabWidth/2, tabY + tabHeight/2}
-	triangleRot := resultsCurrentHeight / resultsMaxHeight * rl.Pi
+	triangleRot := resultsCurrentHeight / resultsOpenHeight() * rl.Pi
 	rl.DrawTriangle(
 		rl.Vector2Add(Vector2Rotate(t1, triangleRot), trianglePos),
 		rl.Vector2Add(Vector2Rotate(t2, triangleRot), trianglePos),
@@ -141,7 +152,7 @@ func drawLatestResults() {
 		rl.NewColor(98, 85, 101, 255),
 	)
 
-	DoPane(rl.Rectangle{0, screenHeight - resultsCurrentHeight, screenWidth - currentSQLWidth, resultsMaxHeight}, func(p Pane) {
+	DoPane(rl.Rectangle{0, screenHeight - resultsCurrentHeight, screenWidth - currentSQLWidth, resultsOpenHeight()}, func(p Pane) {
 		latestResults.Draw(p.Bounds)
 	})
 

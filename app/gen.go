@@ -27,7 +27,7 @@ type QueryContext struct {
 	Joins            []GenJoin
 	WhereConditions  []string
 	HavingConditions []string
-	Orders           []GenOrder
+	Sorts            []GenSort
 }
 
 var _ SqlSource = &QueryContext{}
@@ -85,7 +85,7 @@ type GenCombine struct {
 	Type    CombineType
 }
 
-type GenOrder struct {
+type GenSort struct {
 	Col        string
 	Descending bool
 }
@@ -221,17 +221,17 @@ func (ctx *QueryContext) SourceToSql(indent int) string {
 		sql += strings.Join(ctx.HavingConditions, " AND ")
 	}
 
-	if len(ctx.Orders) > 0 {
-		sql += indented("\nORDER BY ", indent)
-		var orderStrings []string
-		for _, order := range ctx.Orders {
+	if len(ctx.Sorts) > 0 {
+		sql += "\n" + indented("ORDER BY ", indent)
+		var sortStrings []string
+		for _, sort := range ctx.Sorts {
 			direction := ""
-			if order.Descending {
+			if sort.Descending {
 				direction = " DESC"
 			}
-			orderStrings = append(orderStrings, fmt.Sprintf("%s%s", order.Col, direction))
+			sortStrings = append(sortStrings, fmt.Sprintf("%s%s", sort.Col, direction))
 		}
-		sql += strings.Join(orderStrings, ", ")
+		sql += strings.Join(sortStrings, ", ")
 	}
 
 	return sql
@@ -269,21 +269,21 @@ func (ctx *QueryContext) CreateQuery(n *Node) *QueryContext {
 		} else {
 			ctx.WhereConditions = append(ctx.WhereConditions, d.Conditions)
 		}
-	case *Order:
+	case *Sort:
 		ctx = ctx.CreateQuery(n.Inputs[0])
-		if len(ctx.Orders) > 0 {
+		if len(ctx.Sorts) > 0 {
 			ctx = WrapQueryContext(ctx)
 		}
 
 		for _, col := range d.Cols {
-			ctx.Orders = append(ctx.Orders, GenOrder{
+			ctx.Sorts = append(ctx.Sorts, GenSort{
 				Col:        col.Col,
 				Descending: col.Descending,
 			})
 		}
 	case *CombineRows:
 		firstCtx := NewQueryContextFromNode(n.Inputs[0])
-		firstCtx.Orders = nil // anything involved in Combine Rows can't use ORDER BY
+		firstCtx.Sorts = nil // anything involved in Combine Rows can't use ORDER BY
 
 		ctx = WrapQueryContext(firstCtx)
 
@@ -291,7 +291,7 @@ func (ctx *QueryContext) CreateQuery(n *Node) *QueryContext {
 		for _, input := range n.Inputs[1:] {
 			if input != nil {
 				newCtx := NewQueryContextFromNode(input)
-				newCtx.Orders = nil
+				newCtx.Sorts = nil
 				ctx.Combines = append(ctx.Combines, GenCombine{
 					Context: newCtx,
 					Type:    d.CombinationType,

@@ -181,6 +181,9 @@ func (d *Join) DoUI(n *Node) {
 
 func (j *Join) Serialize() (res string, active bool) {
 	res += j.FirstAlias
+	if j.FirstAliasTextbox.Active {
+		active = true
+	}
 	for _, cond := range j.Conditions {
 		res += cond.Alias
 		res += cond.Condition

@@ -12,7 +12,6 @@ import (
 var screenWidth = float32(1920)
 var screenHeight = float32(1080)
 
-const resultsMaxHeight = 400
 const currentSQLWidth = 640
 
 const dividerThickness = 4
@@ -286,108 +285,125 @@ func drawToolbar() {
 		rl.Black,
 	)
 
-	buttHeight := 40 // thicc
+	const buttHeight = 40  // thicc
+	const buttSpacing = 15 // extra thicc
 
 	initNewNode := func(n *Node, defaultSize rl.Vector2) {
 		n.Pos = rl.Vector2Subtract(cam.Target, rl.Vector2DivideV(defaultSize, rl.Vector2{2, 2}))
 		n.Sort = nodeSortTop()
 	}
 
-	LoadThemeForColor(TableColor)
-	if raygui.Button(rl.Rectangle{
-		X:      20,
-		Y:      float32(toolbarHeight/2) - float32(buttHeight/2),
-		Width:  160,
-		Height: float32(buttHeight),
-	}, "Add Table") {
-		n := NewTable()
-		initNewNode(n, rl.Vector2{300, 100})
-		nodes = append(nodes, n)
+	buttonRect := func(x, width float32) rl.Rectangle {
+		return rl.Rectangle{
+			X:      x,
+			Y:      float32(toolbarHeight/2) - float32(buttHeight/2),
+			Width:  width,
+			Height: float32(buttHeight),
+		}
 	}
 
-	LoadThemeForColor(FilterColor)
-	if raygui.Button(rl.Rectangle{
-		X:      200,
-		Y:      float32(toolbarHeight/2) - float32(buttHeight/2),
-		Width:  180,
-		Height: float32(buttHeight),
-	}, "Add Filter") {
-		n := NewFilter()
-		initNewNode(n, rl.Vector2{400, 100})
-		nodes = append(nodes, n)
+	doToolbarButton := func(text, description string, bounds rl.Rectangle, color rl.Color, makeNode func() *Node) (nextX float32) {
+		LoadThemeForColor(color)
+		if raygui.Button(bounds, text) {
+			nodes = append(nodes, makeNode())
+		}
+
+		if rl.CheckCollisionPointRec(rl.GetMousePosition(), bounds) {
+			drawBasicText(description, 20, float32(toolbarHeight)+20, 24, PaneFontColor)
+		}
+
+		return bounds.X + bounds.Width + buttSpacing
 	}
 
-	LoadThemeForColor(PickColumnsColor)
-	if raygui.Button(rl.Rectangle{
-		X:      400,
-		Y:      float32(toolbarHeight/2) - float32(buttHeight/2),
-		Width:  260,
-		Height: float32(buttHeight),
-	}, "Add Pick Columns") {
-		n := NewPickColumns()
-		initNewNode(n, rl.Vector2{450, 200})
-		nodes = append(nodes, n)
-	}
+	var nextX float32 = buttSpacing
 
-	LoadThemeForColor(CombineRowsColor)
-	if raygui.Button(rl.Rectangle{
-		X:      680,
-		Y:      float32(toolbarHeight/2) - float32(buttHeight/2),
-		Width:  260,
-		Height: float32(buttHeight),
-	}, "Add Combine Rows") {
-		n := NewCombineRows(Union)
-		initNewNode(n, rl.Vector2{300, 150})
-		nodes = append(nodes, n)
-	}
+	nextX = doToolbarButton(
+		"Table", "Get the contents of a database table.",
+		buttonRect(nextX, 100),
+		TableColor,
+		func() *Node {
+			n := NewTable()
+			initNewNode(n, rl.Vector2{300, 100})
+			return n
+		},
+	)
 
-	LoadThemeForColor(OrderColor)
-	if raygui.Button(rl.Rectangle{
-		X:      960,
-		Y:      float32(toolbarHeight/2) - float32(buttHeight/2),
-		Width:  160,
-		Height: float32(buttHeight),
-	}, "Add Order") {
-		n := NewOrder()
-		initNewNode(n, rl.Vector2{350, 150})
-		nodes = append(nodes, n)
-	}
+	nextX = doToolbarButton(
+		"Filter", "Pick only the rows matching the condition.",
+		buttonRect(nextX, 120),
+		FilterColor,
+		func() *Node {
+			n := NewFilter()
+			initNewNode(n, rl.Vector2{400, 100})
+			return n
+		},
+	)
 
-	LoadThemeForColor(JoinColor)
-	if raygui.Button(rl.Rectangle{
-		X:      1140,
-		Y:      float32(toolbarHeight/2) - float32(buttHeight/2),
-		Width:  140,
-		Height: float32(buttHeight),
-	}, "Add Join") {
-		n := NewJoin()
-		initNewNode(n, rl.Vector2{600, 200})
-		nodes = append(nodes, n)
-	}
+	nextX = doToolbarButton(
+		"Pick Columns", "Pick only the specified columns. Can also rename columns.",
+		buttonRect(nextX, 200),
+		PickColumnsColor,
+		func() *Node {
+			n := NewPickColumns()
+			initNewNode(n, rl.Vector2{450, 200})
+			return n
+		},
+	)
 
-	LoadThemeForColor(AggregateColor)
-	if raygui.Button(rl.Rectangle{
-		X:      1300,
-		Y:      float32(toolbarHeight/2) - float32(buttHeight/2),
-		Width:  220,
-		Height: float32(buttHeight),
-	}, "Add Aggregate") {
-		n := NewAggregate()
-		initNewNode(n, rl.Vector2{600, 200})
-		nodes = append(nodes, n)
-	}
+	nextX = doToolbarButton(
+		"Sort", "Sort the table by one or more columns.",
+		buttonRect(nextX, 100),
+		SortColor,
+		func() *Node {
+			n := NewSort()
+			initNewNode(n, rl.Vector2{350, 150})
+			return n
+		},
+	)
 
-	LoadThemeForColor(PreviewColor)
-	if raygui.Button(rl.Rectangle{
-		X:      screenWidth - 220 - 20,
-		Y:      float32(toolbarHeight/2) - float32(buttHeight/2),
-		Width:  220,
-		Height: float32(buttHeight),
-	}, "Add Preview") {
-		n := NewPreview()
-		initNewNode(n, rl.Vector2{600, 400})
-		nodes = append(nodes, n)
-	}
+	nextX = doToolbarButton(
+		"Aggregate", "Aggregate all the rows of the table into a single result, optionally grouping by one or more columns.",
+		buttonRect(nextX, 160),
+		AggregateColor,
+		func() *Node {
+			n := NewAggregate()
+			initNewNode(n, rl.Vector2{600, 200})
+			return n
+		},
+	)
+
+	nextX = doToolbarButton(
+		"Join", "Combine multiple tables into one by pairing up rows that match a certain condition.",
+		buttonRect(nextX, 120),
+		JoinColor,
+		func() *Node {
+			n := NewJoin()
+			initNewNode(n, rl.Vector2{600, 200})
+			return n
+		},
+	)
+
+	nextX = doToolbarButton(
+		"Combine Rows", "Take two tables with the same schema and combine their rows using set operations.",
+		buttonRect(nextX, 200),
+		CombineRowsColor,
+		func() *Node {
+			n := NewCombineRows(Union)
+			initNewNode(n, rl.Vector2{300, 150})
+			return n
+		},
+	)
+
+	doToolbarButton(
+		"Preview", "View the results of a query as you work.",
+		buttonRect(screenWidth-160-buttSpacing, 160),
+		PreviewColor,
+		func() *Node {
+			n := NewPreview()
+			initNewNode(n, rl.Vector2{600, 400})
+			return n
+		},
+	)
 
 	LoadStyleMain()
 
@@ -421,7 +437,7 @@ func drawCurrentSQL() {
 		rl.Vector2{lineX, screenHeight},
 		dividerThickness, rl.Black,
 	)
-	DoPane(rl.Rectangle{screenWidth - currentSQLWidth + dividerThickness, screenHeight - resultsCurrentHeight, currentSQLWidth - dividerThickness, resultsMaxHeight}, func(p Pane) {
+	DoPane(rl.Rectangle{screenWidth - currentSQLWidth + dividerThickness, screenHeight - resultsCurrentHeight, currentSQLWidth - dividerThickness, resultsOpenHeight()}, func(p Pane) {
 		const headerHeight = 40
 		const bottomButtonHeights = 40
 		const padding = 6

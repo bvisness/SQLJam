@@ -47,43 +47,36 @@ func (n *Node) Rect() rl.Rectangle {
 }
 
 func clearAllSchemas() {
+	fmt.Println("cleared")
 	for _, n := range nodes {
 		n.Schema = nil
 	}
 }
 
-func (n *Node) Update() {
+func doAndCheckForUpdates(n *Node, do func()) {
 	before, activeBefore := n.Serialize()
-	n.Data.Update(n)
+	do()
 	after, activeAfter := n.Serialize()
-
-	if before != after {
-		clearAllSchemas()
-	}
 
 	justDeactivated := activeBefore && !activeAfter
 	contentChangedAndInactive := before != after && !activeAfter
 
 	if justDeactivated || contentChangedAndInactive {
+		clearAllSchemas()
 		MarkInspectorDirty(n)
 	}
 }
 
+func (n *Node) Update() {
+	doAndCheckForUpdates(n, func() {
+		n.Data.Update(n)
+	})
+}
+
 func (n *Node) DoUI() {
-	before, activeBefore := n.Serialize()
-	n.Data.DoUI(n)
-	after, activeAfter := n.Serialize()
-
-	if before != after {
-		clearAllSchemas()
-	}
-
-	justDeactivated := activeBefore && !activeAfter
-	contentChangedAndInactive := before != after && !activeAfter
-
-	if justDeactivated || contentChangedAndInactive {
-		MarkInspectorDirty(n)
-	}
+	doAndCheckForUpdates(n, func() {
+		n.Data.DoUI(n)
+	})
 }
 
 func (n *Node) Serialize() (string, bool) {

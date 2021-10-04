@@ -10,7 +10,7 @@ import (
 const previewMinWidth = 300
 const previewMinHeight = 200
 
-var PreviewColor = rl.Gray
+var PreviewColor = rl.NewColor(155, 171, 178, 255)
 
 type Preview struct {
 	Panel     QueryResultPanel
@@ -35,6 +35,7 @@ func NewPreview() *Node {
 func (d *Preview) Update(n *Node) {
 	if n.Schema == nil {
 		d.Panel.Update(doQuery(n.GenerateSql(true)))
+		n.Schema = getSchema(n)
 	}
 
 	n.UISize = d.Size
