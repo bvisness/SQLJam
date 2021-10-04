@@ -81,6 +81,8 @@ func (d *Preview) DoUI(n *Node) {
 			}
 			d.Size = newSize
 		}
+	} else {
+		d.Size = rl.Vector2{n.UIRect.Width, n.UIRect.Height}
 	}
 }
 
