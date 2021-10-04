@@ -122,6 +122,11 @@ func drawLatestResults() {
 	tabRect := rl.Rectangle{tabX, tabY, tabWidth, tabHeight}
 	rl.DrawRectangleRounded(tabRect, RoundnessPx(tabRect, 4), 5, rl.Black)
 
+	tipSize := float32(32)
+	tipZoomFmt := int(cam.Zoom * 100)
+	tipText := fmt.Sprintf("Zoom: %d%%", tipZoomFmt)
+	drawBasicText(tipText, tabX - 40 - float32(raygui.GetTextWidth(tipText)), tabY + (tabHeight / 2) - (tipSize / 2), tipSize, PaneFontColor)
+
 	const triangleSize = 12
 	t1 := rl.Vector2{-triangleSize, triangleSize / 2}
 	t2 := rl.Vector2{triangleSize, triangleSize / 2}
@@ -135,6 +140,7 @@ func drawLatestResults() {
 		rl.Vector2Add(Vector2Rotate(t3, triangleRot), trianglePos),
 		rl.NewColor(98, 85, 101, 255),
 	)
+
 
 	SetStyleColor(raygui.Default, raygui.BackgroundColorProp, MainColor())
 
