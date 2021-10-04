@@ -4,6 +4,16 @@ A project for the Handmade Network's 2021 Wheel Reinvention Jam, by Ben Visness 
 
 ![App Screenshot](/screenshots/fawcett_full.png?raw=true)
 
+## Running
+
+You will need a recent version of Go. We used Go 1.17, but older versions should work too.
+
+Simply run:
+
+```
+go run main.go
+```
+
 ## Notices
 
 The Sakila sample database is provided under the New BSD license as described [here](https://dev.mysql.com/doc/sakila/en/sakila-license.html).
