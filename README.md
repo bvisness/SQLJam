@@ -2,7 +2,7 @@
 
 A project for the Handmade Network's 2021 Wheel Reinvention Jam, by Ben Visness and Ejektaflex. Taking a fresh look at database queries and providing a more interactive, playful way of accessing data.
 
-![App Screenshot](/screenshots/Screenshot 2021-10-03 212534.png?raw=true)
+![App Screenshot](/screenshots/fawcett_full.png?raw=true)
 
 ## Notices
 
