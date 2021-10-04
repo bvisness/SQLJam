@@ -8,7 +8,7 @@ import (
 )
 
 const previewMinWidth = 300
-const previewMinHeight = 200
+const previewMinHeight = 100
 
 var PreviewColor = rl.NewColor(155, 171, 178, 255)
 

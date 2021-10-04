@@ -66,9 +66,7 @@ func (p *PickColumns) Update(n *Node) {
 
 	opts := columnNameDropdownOpts(n.Inputs[0])
 	for _, entry := range p.Entries {
-		if len(opts) == 0 {
-			entry.ColDropdown.SetOptions(errorOpts...)
-		} else {
+		if len(opts) > 0 {
 			entry.ColDropdown.SetOptions(opts...)
 		}
 	}
