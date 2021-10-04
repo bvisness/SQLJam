@@ -19,7 +19,7 @@ func NewPreview() *Node {
 
 func (d *Preview) Update(n *Node) {
 	if n.Schema == nil {
-		d.Panel.Update(doQuery(n.GenerateSql()))
+		d.Panel.Update(doQuery(n.GenerateSql(true)))
 	}
 
 	n.UISize = rl.Vector2{600, 400}

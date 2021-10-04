@@ -432,6 +432,10 @@ func (ctx *QueryContext) RecursiveGenerateInputs(n *Node) *QueryContext {
 	return ctx
 }
 
-func (n *Node) GenerateSql() string {
-	return NewQueryContextFromNode(n).SourceToSql(0)
+func (n *Node) GenerateSql(limit bool) string {
+	sql := NewQueryContextFromNode(n).SourceToSql(0)
+	if limit {
+		sql += " LIMIT 1000"
+	}
+	return sql
 }

@@ -78,10 +78,10 @@ func MarkInspectorDirty(n *Node) {
 
 func UpdateInspectorIfNeeded() {
 	if inspectorDirty && selectedNode != nil {
-		sql := selectedNode.GenerateSql()
+		sql := selectedNode.GenerateSql(false)
 		currentSQL = sql
 		resultsOpen = true
-		latestResults.Update(doQuery(sql))
+		latestResults.Update(doQuery(selectedNode.GenerateSql(true)))
 	}
 	inspectorDirty = false
 }

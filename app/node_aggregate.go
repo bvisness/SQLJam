@@ -86,7 +86,7 @@ func (d *Aggregate) Update(n *Node) {
 	}
 	height += UIFieldHeight // for +/- buttons
 
-	n.UISize = rl.Vector2{480, float32(height)}
+	n.UISize = rl.Vector2{600, float32(height)}
 
 	colOpts := columnNameDropdownOpts(n.Inputs[0])
 	for _, agg := range d.Aggregates {
@@ -99,7 +99,7 @@ func (d *Aggregate) Update(n *Node) {
 }
 
 func (d *Aggregate) DoUI(n *Node) {
-	const typeWidth = 140
+	const typeWidth = 200
 
 	openDropdown, isOpen := raygui.GetOpenDropdown(d.AllDropdowns())
 	if isOpen {

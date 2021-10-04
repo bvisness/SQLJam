@@ -7,7 +7,7 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
-const orderDirectionWidth = 40
+const orderDirectionWidth = 50
 
 type Order struct {
 	Cols []*OrderColumn

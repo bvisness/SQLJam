@@ -93,7 +93,7 @@ func (d *Join) Update(n *Node) {
 
 	uiHeight += UIFieldHeight // +/- buttons
 
-	n.UISize = rl.Vector2{480, float32(uiHeight)}
+	n.UISize = rl.Vector2{560, float32(uiHeight)}
 }
 
 func (d *Join) DoUI(n *Node) {
