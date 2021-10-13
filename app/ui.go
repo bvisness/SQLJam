@@ -65,10 +65,25 @@ func columnNameDropdownOpts(inputNode *Node) []raygui.DropdownExOption {
 	return opts
 }
 
+const basicTextSpacingRatio = 2 / 24
+
 func drawBasicText(text string, x float32, y float32, size float32, color rl.Color) {
-	rl.DrawTextEx(font, text, rl.Vector2{X: x, Y: y}, size, 2, color)
+	rl.DrawTextEx(font, text, rl.Vector2{X: x, Y: y}, size, basicTextSpacingRatio*size, color)
 }
 
 func measureBasicText(text string, size float32) rl.Vector2 {
-	return rl.MeasureTextEx(font, text, size, 2)
+	return rl.MeasureTextEx(font, text, size, basicTextSpacingRatio*size)
+}
+
+func drawResizeHandle(bottomRight rl.Vector2, nodeColor rl.Color) {
+	rl.DrawLineV(
+		rl.Vector2{bottomRight.X - 10, bottomRight.Y - 2},
+		rl.Vector2{bottomRight.X - 2, bottomRight.Y - 10},
+		Brightness(nodeColor, 0.5),
+	)
+	rl.DrawLineV(
+		rl.Vector2{bottomRight.X - 6, bottomRight.Y - 2},
+		rl.Vector2{bottomRight.X - 2, bottomRight.Y - 6},
+		Brightness(nodeColor, 0.5),
+	)
 }

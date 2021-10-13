@@ -417,7 +417,7 @@ func (ctx *QueryContext) CreateQuery(n *Node) *QueryContext {
 			GroupByCols: groupByCols,
 			Aggs:        aggs,
 		}
-	case *Preview:
+	case *Preview, *Chart:
 		ctx = ctx.CreateQuery(n.Inputs[0])
 	}
 

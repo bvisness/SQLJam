@@ -52,17 +52,7 @@ func (d *Preview) DoUI(n *Node) {
 	bottomRight := rl.Vector2{n.Pos.X + n.Size.X, n.Pos.Y + n.Size.Y}
 	resizeRect := rl.Rectangle{bottomRight.X - 20, bottomRight.Y - 20, 20, 20}
 
-	// resize handle
-	rl.DrawLineV(
-		rl.Vector2{bottomRight.X - 10, bottomRight.Y - 2},
-		rl.Vector2{bottomRight.X - 2, bottomRight.Y - 10},
-		Brightness(n.Color, 0.5),
-	)
-	rl.DrawLineV(
-		rl.Vector2{bottomRight.X - 6, bottomRight.Y - 2},
-		rl.Vector2{bottomRight.X - 2, bottomRight.Y - 6},
-		Brightness(n.Color, 0.5),
-	)
+	drawResizeHandle(bottomRight, n.Color)
 
 	resizeDragKey := fmt.Sprintf("resize: %p", d)
 	if tryStartDrag(resizeDragKey, resizeRect, rl.Vector2{}) {
