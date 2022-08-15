@@ -6,6 +6,8 @@ A project for the Handmade Network's 2021 Wheel Reinvention Jam, by Ben Visness 
 
 ## Running
 
+**Please note that this is a prototype made for a jam, and not a finished app.** It has bugs and we know it. If it works for you, great!
+
 You will need a recent version of Go. We used Go 1.17, but older versions should work too.
 
 Simply run:
