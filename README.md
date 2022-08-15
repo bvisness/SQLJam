@@ -1,6 +1,10 @@
 # SQL Jam Project
 
-A project for the Handmade Network's 2021 Wheel Reinvention Jam, by Ben Visness and Ejektaflex. Taking a fresh look at database queries and providing a more interactive, playful way of accessing data.
+A project for the Handmade Network's 2021 [Wheel Reinvention Jam](https://handmade.network/jam/2021), by Ben Visness and Ejektaflex. Taking a fresh look at database queries and providing a more interactive, playful way of accessing data.
+
+- 🌐 [**Jam Submission**](https://handmade.network/forums/jam/t/8127-jam_submission__database_explorer)
+- 🎥 [**Demo video**](https://youtu.be/JaKU_e857jY)
+- 🎙 [**Live demo with commentary**](https://youtu.be/1RjU5XJqysc?t=6390)
 
 ![App Screenshot](/screenshots/fawcett_full.png?raw=true)
 
