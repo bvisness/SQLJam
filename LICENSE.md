@@ -1,0 +1,1 @@
+This project is proprietary. It has no license and is therefore covered only by the [GitHub terms of service](https://docs.github.com/en/site-policy/github-terms/github-terms-of-service#3-ownership-of-content-right-to-post-and-license-grants), which grants no permissions beyond simple viewing and forking via GitHub.
